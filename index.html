@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Technical Games Research Map</title>
+    <link rel="preconnect" href="https://unpkg.com" crossorigin>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha384-bt7v9sTk7EfghpGmR2HkQwTz9bJgn2hQO9i7Q2r1qj8C5iS1N1m0OaWkJf1K3n1N" crossorigin="anonymous" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="app-header">
+      <div class="brand">
+        <div class="logo-circle">GR</div>
+        <div class="titles">
+          <h1>Technical Games Research</h1>
+          <p class="subtitle">Explore institutions, people, papers, and conferences worldwide</p>
+        </div>
+      </div>
+      <nav class="view-switcher" aria-label="Primary">
+        <button class="view-btn active" data-view="map" aria-pressed="true">Map</button>
+        <button class="view-btn" data-view="list" aria-pressed="false">List</button>
+      </nav>
+    </header>
+
+    <main class="app-main">
+      <aside id="filters" class="filters" aria-label="Filters">
+        <div class="filter-group">
+          <label for="searchInput" class="filter-label">Search</label>
+          <input id="searchInput" type="search" placeholder="Search name, researchers, or areas" />
+        </div>
+
+        <div class="filter-group">
+          <div class="filter-label">Type</div>
+          <div id="typeFilters" class="checkbox-group">
+            <!-- populated at runtime -->
+          </div>
+        </div>
+
+        <div class="filter-group">
+          <label for="countrySelect" class="filter-label">Country</label>
+          <select id="countrySelect"></select>
+        </div>
+
+        <div class="filter-group">
+          <label for="conferenceSelect" class="filter-label">Conference</label>
+          <select id="conferenceSelect"></select>
+        </div>
+
+        <div class="filter-group">
+          <label for="sortSelect" class="filter-label">Sort by</label>
+          <select id="sortSelect">
+            <option value="publications_desc">Publications (high → low)</option>
+            <option value="publications_asc">Publications (low → high)</option>
+            <option value="name_asc">Name (A → Z)</option>
+            <option value="name_desc">Name (Z → A)</option>
+            <option value="country_asc">Country (A → Z)</option>
+            <option value="type_asc">Type (A → Z)</option>
+          </select>
+        </div>
+
+        <div class="filter-footer">
+          <button id="resetFiltersBtn" class="secondary">Reset filters</button>
+        </div>
+
+        <div class="legend">
+          <div class="legend-item"><span class="legend-swatch university"></span>University</div>
+          <div class="legend-item"><span class="legend-swatch company"></span>Company</div>
+          <div class="legend-item"><span class="legend-swatch research-group"></span>Research Group</div>
+        </div>
+      </aside>
+
+      <section id="content" class="content">
+        <div id="mapContainer" class="view view-map">
+          <div id="map" role="region" aria-label="World map of technical games research"></div>
+        </div>
+        <div id="listContainer" class="view view-list hidden" aria-live="polite">
+          <div class="list-summary">
+            <span id="resultCount">0</span> institutions
+          </div>
+          <div class="table-wrap">
+            <table class="institutions-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Type</th>
+                  <th>Country</th>
+                  <th class="num">Publications</th>
+                  <th>Conferences</th>
+                </tr>
+              </thead>
+              <tbody id="institutionsTbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <aside id="detailsDrawer" class="details-drawer hidden" aria-live="polite" aria-label="Institution details">
+        <button id="closeDetailsBtn" class="icon-btn" aria-label="Close details">✕</button>
+        <div id="detailsContent"></div>
+      </aside>
+    </main>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha384-8F8lCwKk67xQkN4bZ9k7Jr0sG1h3+1Y2v6pW8k6qRr9F1vC9D7Q3s0wNQH3k9t8F" crossorigin="anonymous"></script>
+    <script type="module" src="./scripts/app.js"></script>
+  </body>
+</html>

@@ -1,0 +1,413 @@
+[
+  {
+    "id": "mit-gamelab",
+    "name": "MIT Game Lab (Technical)",
+    "type": "University",
+    "country": "United States",
+    "city": "Cambridge, MA",
+    "latitude": 42.3601,
+    "longitude": -71.0942,
+    "publications": 240,
+    "researchers": [
+      { "name": "Alex Carter" },
+      { "name": "Priya Raman" },
+      { "name": "Derek Lin" }
+    ],
+    "conferences": ["CoG", "AIIDE", "FDG", "SIGGRAPH"],
+    "areas": ["Game AI", "PCG", "Reinforcement Learning", "Graphics"],
+    "links": { "website": "https://mit.edu" }
+  },
+  {
+    "id": "cmu-graphics-games",
+    "name": "CMU Graphics & Games Tech",
+    "type": "University",
+    "country": "United States",
+    "city": "Pittsburgh, PA",
+    "latitude": 40.4444,
+    "longitude": -79.9436,
+    "publications": 310,
+    "researchers": [
+      { "name": "Sarah Kim" },
+      { "name": "Miguel Alvarez" },
+      { "name": "Jing Xu" }
+    ],
+    "conferences": ["SIGGRAPH", "CoG", "AIIDE"],
+    "areas": ["Graphics", "Physics Simulation", "Game Engines"],
+    "links": { "website": "https://cmu.edu" }
+  },
+  {
+    "id": "ubisoft-la-forge",
+    "name": "Ubisoft La Forge",
+    "type": "Company",
+    "country": "Canada",
+    "city": "Montreal",
+    "latitude": 45.5017,
+    "longitude": -73.5673,
+    "publications": 120,
+    "researchers": [
+      { "name": "Nadine Fréchette" },
+      { "name": "Omar Hassan" }
+    ],
+    "conferences": ["CoG", "SIGGRAPH", "NeurIPS"],
+    "areas": ["Animation", "ML for Graphics", "Game AI"],
+    "links": { "website": "https://laforge.ubisoft.com" }
+  },
+  {
+    "id": "ea-seed",
+    "name": "EA SEED",
+    "type": "Company",
+    "country": "Sweden",
+    "city": "Stockholm",
+    "latitude": 59.3293,
+    "longitude": 18.0686,
+    "publications": 90,
+    "researchers": [
+      { "name": "Jonas Berg" },
+      { "name": "Li Wei" }
+    ],
+    "conferences": ["CoG", "SIGGRAPH"],
+    "areas": ["Rendering", "Game AI", "RL"],
+    "links": { "website": "https://seed.ea.com" }
+  },
+  {
+    "id": "deepmind-games",
+    "name": "Google DeepMind (Games)",
+    "type": "Company",
+    "country": "United Kingdom",
+    "city": "London",
+    "latitude": 51.5074,
+    "longitude": -0.1278,
+    "publications": 550,
+    "researchers": [
+      { "name": "Eva Müller" },
+      { "name": "Tom Brown" },
+      { "name": "Zhi Li" }
+    ],
+    "conferences": ["NeurIPS", "ICML", "CoG"],
+    "areas": ["Reinforcement Learning", "Multi-Agent", "Game Theory"],
+    "links": { "website": "https://deepmind.com" }
+  },
+  {
+    "id": "qmul-games-ai",
+    "name": "Queen Mary Game AI Group",
+    "type": "University",
+    "country": "United Kingdom",
+    "city": "London",
+    "latitude": 51.5246,
+    "longitude": -0.0357,
+    "publications": 220,
+    "researchers": [
+      { "name": "Laura Rossi" },
+      { "name": "Hiro Tanaka" }
+    ],
+    "conferences": ["CoG", "AIIDE", "FDG"],
+    "areas": ["Game AI", "PCG", "Player Modeling"],
+    "links": { "website": "https://qmul.ac.uk" }
+  },
+  {
+    "id": "tu-delft-games",
+    "name": "TU Delft Game Technology",
+    "type": "University",
+    "country": "Netherlands",
+    "city": "Delft",
+    "latitude": 52.0116,
+    "longitude": 4.3571,
+    "publications": 180,
+    "researchers": [
+      { "name": "Matteo Bianchi" },
+      { "name": "Alice Wong" }
+    ],
+    "conferences": ["FDG", "CoG"],
+    "areas": ["PCG", "HCI", "Game Design Tools"],
+    "links": { "website": "https://tudelft.nl" }
+  },
+  {
+    "id": "alberta-poker",
+    "name": "University of Alberta Computer Poker",
+    "type": "University",
+    "country": "Canada",
+    "city": "Edmonton",
+    "latitude": 53.5461,
+    "longitude": -113.4938,
+    "publications": 150,
+    "researchers": [
+      { "name": "Michael Lee" },
+      { "name": "Sofia Petrova" }
+    ],
+    "conferences": ["AAAI", "NeurIPS", "CoG"],
+    "areas": ["Game Theory", "Search", "RL"],
+    "links": { "website": "https://ualberta.ca" }
+  },
+  {
+    "id": "tokyo-game-informatics",
+    "name": "University of Tokyo Game Informatics",
+    "type": "University",
+    "country": "Japan",
+    "city": "Tokyo",
+    "latitude": 35.7126,
+    "longitude": 139.7610,
+    "publications": 130,
+    "researchers": [
+      { "name": "Kenji Sato" },
+      { "name": "Yuna Park" }
+    ],
+    "conferences": ["CoG", "AIIDE", "CHI PLAY"],
+    "areas": ["Game AI", "HCI", "XR"],
+    "links": { "website": "https://u-tokyo.ac.jp" }
+  },
+  {
+    "id": "tsinghua-game-ai",
+    "name": "Tsinghua Game AI Lab",
+    "type": "University",
+    "country": "China",
+    "city": "Beijing",
+    "latitude": 39.9042,
+    "longitude": 116.4074,
+    "publications": 200,
+    "researchers": [
+      { "name": "Wei Zhang" },
+      { "name": "Hao Chen" }
+    ],
+    "conferences": ["CoG", "NeurIPS", "ICLR"],
+    "areas": ["RL", "PCG", "Multi-Agent"],
+    "links": { "website": "https://tsinghua.edu.cn" }
+  },
+  {
+    "id": "iitb-game-tech",
+    "name": "IIT Bombay Game Tech",
+    "type": "University",
+    "country": "India",
+    "city": "Mumbai",
+    "latitude": 19.0760,
+    "longitude": 72.8777,
+    "publications": 95,
+    "researchers": [
+      { "name": "Ananya Gupta" },
+      { "name": "Ravi Kulkarni" }
+    ],
+    "conferences": ["CoG", "FDG"],
+    "areas": ["PCG", "Graphics", "Learning"],
+    "links": { "website": "https://iitb.ac.in" }
+  },
+  {
+    "id": "uct-game-ai",
+    "name": "University of Cape Town Game AI",
+    "type": "University",
+    "country": "South Africa",
+    "city": "Cape Town",
+    "latitude": -33.9249,
+    "longitude": 18.4241,
+    "publications": 60,
+    "researchers": [
+      { "name": "Thabo Ndlovu" },
+      { "name": "Amina El-Sayed" }
+    ],
+    "conferences": ["CoG", "AIIDE"],
+    "areas": ["Game AI", "Education", "PCG"],
+    "links": { "website": "https://uct.ac.za" }
+  },
+  {
+    "id": "usp-game-lab",
+    "name": "University of São Paulo Game Lab",
+    "type": "University",
+    "country": "Brazil",
+    "city": "São Paulo",
+    "latitude": -23.5505,
+    "longitude": -46.6333,
+    "publications": 110,
+    "researchers": [
+      { "name": "Diego Costa" },
+      { "name": "Mariana Silva" }
+    ],
+    "conferences": ["CoG", "FDG"],
+    "areas": ["PCG", "HCI", "Serious Games"],
+    "links": { "website": "https://usp.br" }
+  },
+  {
+    "id": "eth-game-tech",
+    "name": "ETH Zurich Game Technology",
+    "type": "University",
+    "country": "Switzerland",
+    "city": "Zurich",
+    "latitude": 47.3769,
+    "longitude": 8.5417,
+    "publications": 170,
+    "researchers": [
+      { "name": "Lukas Meier" },
+      { "name": "Sara Rossi" }
+    ],
+    "conferences": ["SIGGRAPH", "CoG"],
+    "areas": ["Graphics", "Physics", "Interaction"],
+    "links": { "website": "https://ethz.ch" }
+  },
+  {
+    "id": "oxford-game-ai",
+    "name": "University of Oxford Game AI",
+    "type": "University",
+    "country": "United Kingdom",
+    "city": "Oxford",
+    "latitude": 51.7520,
+    "longitude": -1.2577,
+    "publications": 210,
+    "researchers": [
+      { "name": "James Turner" },
+      { "name": "Hannah Wood" }
+    ],
+    "conferences": ["CoG", "NeurIPS"],
+    "areas": ["RL", "Game AI", "PCG"],
+    "links": { "website": "https://ox.ac.uk" }
+  },
+  {
+    "id": "monash-games",
+    "name": "Monash University Games Research",
+    "type": "University",
+    "country": "Australia",
+    "city": "Melbourne",
+    "latitude": -37.8136,
+    "longitude": 144.9631,
+    "publications": 85,
+    "researchers": [
+      { "name": "Olivia Chen" },
+      { "name": "Andrew White" }
+    ],
+    "conferences": ["FDG", "CoG", "CHI PLAY"],
+    "areas": ["HCI", "Serious Games", "PCG"],
+    "links": { "website": "https://monash.edu" }
+  },
+  {
+    "id": "nus-game-lab",
+    "name": "National University of Singapore Game Lab",
+    "type": "University",
+    "country": "Singapore",
+    "city": "Singapore",
+    "latitude": 1.3521,
+    "longitude": 103.8198,
+    "publications": 140,
+    "researchers": [
+      { "name": "Wei Ling" },
+      { "name": "Arjun Menon" }
+    ],
+    "conferences": ["CoG", "AIIDE"],
+    "areas": ["Game AI", "Networking", "XR"],
+    "links": { "website": "https://nus.edu.sg" }
+  },
+  {
+    "id": "snu-game-ai",
+    "name": "Seoul National University Game AI",
+    "type": "University",
+    "country": "South Korea",
+    "city": "Seoul",
+    "latitude": 37.5665,
+    "longitude": 126.9780,
+    "publications": 160,
+    "researchers": [
+      { "name": "Ji-ho Park" },
+      { "name": "Min-seo Kim" }
+    ],
+    "conferences": ["CoG", "NeurIPS"],
+    "areas": ["RL", "PCG", "Game AI"],
+    "links": { "website": "https://snu.ac.kr" }
+  },
+  {
+    "id": "sharif-game-tech",
+    "name": "Sharif University Game Tech",
+    "type": "University",
+    "country": "Iran",
+    "city": "Tehran",
+    "latitude": 35.6892,
+    "longitude": 51.3890,
+    "publications": 70,
+    "researchers": [
+      { "name": "Reza Mahmoud" },
+      { "name": "Neda Karimi" }
+    ],
+    "conferences": ["FDG", "CoG"],
+    "areas": ["PCG", "Game AI"],
+    "links": { "website": "https://en.sharif.edu" }
+  },
+  {
+    "id": "fb-reality-labs-games",
+    "name": "Meta Reality Labs (Games)",
+    "type": "Company",
+    "country": "United States",
+    "city": "Redmond, WA",
+    "latitude": 47.6740,
+    "longitude": -122.1215,
+    "publications": 130,
+    "researchers": [
+      { "name": "Kevin Johnson" },
+      { "name": "Ritika Shah" }
+    ],
+    "conferences": ["SIGGRAPH", "CoG", "CHI PLAY"],
+    "areas": ["XR", "Graphics", "Haptics"],
+    "links": { "website": "https://about.facebook.com/realitylabs" }
+  },
+  {
+    "id": "ubc-game-research",
+    "name": "UBC Game Research",
+    "type": "University",
+    "country": "Canada",
+    "city": "Vancouver",
+    "latitude": 49.2827,
+    "longitude": -123.1207,
+    "publications": 100,
+    "researchers": [
+      { "name": "Ava Thompson" },
+      { "name": "Noah Zhang" }
+    ],
+    "conferences": ["FDG", "CoG"],
+    "areas": ["HCI", "PCG", "Education"],
+    "links": { "website": "https://ubc.ca" }
+  },
+  {
+    "id": "ntu-game-ai",
+    "name": "NTU Game AI",
+    "type": "University",
+    "country": "Taiwan",
+    "city": "Taipei",
+    "latitude": 25.0330,
+    "longitude": 121.5654,
+    "publications": 125,
+    "researchers": [
+      { "name": "Chia-Lin Huang" },
+      { "name": "Yu-Han Wang" }
+    ],
+    "conferences": ["CoG", "AIIDE"],
+    "areas": ["Game AI", "PCG"],
+    "links": { "website": "https://ntu.edu.tw" }
+  },
+  {
+    "id": "uit-game-tech",
+    "name": "UiT Game Technology",
+    "type": "University",
+    "country": "Norway",
+    "city": "Tromsø",
+    "latitude": 69.6492,
+    "longitude": 18.9553,
+    "publications": 45,
+    "researchers": [
+      { "name": "Kari Olsen" },
+      { "name": "Jonas Hansen" }
+    ],
+    "conferences": ["FDG"],
+    "areas": ["Serious Games", "HCI"],
+    "links": { "website": "https://uit.no" }
+  },
+  {
+    "id": "upc-game-tech",
+    "name": "UPC Game Technology",
+    "type": "University",
+    "country": "Spain",
+    "city": "Barcelona",
+    "latitude": 41.3851,
+    "longitude": 2.1734,
+    "publications": 95,
+    "researchers": [
+      { "name": "Carlos Gómez" },
+      { "name": "Laura Martín" }
+    ],
+    "conferences": ["CoG", "SIGGRAPH"],
+    "areas": ["Graphics", "PCG"],
+    "links": { "website": "https://upc.edu" }
+  }
+]
