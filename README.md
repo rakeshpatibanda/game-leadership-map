@@ -222,7 +222,7 @@ npm run build
 - [ ] Add timeline visualization for research trends
 - [ ] Support for additional research metrics
 - [ ] Dark mode theme
-- [✅] Mobile-optimized touch interactions
+- [ ] Mobile-optimized touch interactions
 - [ ] Data update automation
 - [ ] Institution comparison tools
 
