@@ -24,6 +24,7 @@ export default function Page() {
   const [q, setQ] = useState("");
   const [country, setCountry] = useState("ALL");
   const [minCount, setMinCount] = useState(1);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Load data
   useEffect(() => {
@@ -107,6 +108,11 @@ export default function Page() {
       center: [0, 20],
       zoom: 2,
       minZoom: 1,
+      maxZoom: 18,
+      // Mobile-specific optimizations
+      touchZoomRotate: true,
+      dragRotate: false,
+      pitchWithRotate: false,
     });
     mapRef.current = map;
     map.addControl(new maplibregl.NavigationControl(), "top-right");
@@ -201,26 +207,31 @@ export default function Page() {
           }
           return `
             <div style="margin:8px 0 10px; padding-bottom:8px; border-bottom:1px solid #eee;">
-              <div style="font-weight:600;color:#000">${p.name}</div>
-              <div style="color:#333">${p.country || "Unknown"} • ${p.paper_count} papers</div>
-              ${tops.length ? `<div style="margin-top:4px;color:#111"><b style="color:#000">Top authors:</b> ${tops.join(", ")}</div>` : ""}
+              <div style="font-weight:600;color:#000;font-size:14px;line-height:1.3">${p.name}</div>
+              <div style="color:#333;font-size:12px;margin-top:2px">${p.country || "Unknown"} • ${p.paper_count} papers</div>
+              ${tops.length ? `<div style="margin-top:4px;color:#111;font-size:11px;line-height:1.2"><b style="color:#000">Top authors:</b> ${tops.join(", ")}</div>` : ""}
             </div>`;
         };
 
         let html: string;
+        const isMobile = window.innerWidth < 768;
+        const maxWidth = isMobile ? '280px' : '320px';
+        const padding = isMobile ? '8px 12px' : '10px 14px';
+        const fontSize = isMobile ? '12px' : '14px';
+        
         if (uniq.length > 1) {
           html = `
-            <div style="font-family:system-ui,sans-serif;font-size:14px;color:#111;background:rgba(255,255,255,.97);border-radius:8px;padding:10px 14px;box-shadow:0 2px 8px rgba(0,0,0,.15);max-width:320px;line-height:1.5">
-              <div style="font-weight:700;margin-bottom:6px;color:#000">Institutions here (${uniq.length})</div>
+            <div style="font-family:system-ui,sans-serif;font-size:${fontSize};color:#111;background:rgba(255,255,255,.97);border-radius:8px;padding:${padding};box-shadow:0 2px 8px rgba(0,0,0,.15);max-width:${maxWidth};line-height:1.4;word-wrap:break-word">
+              <div style="font-weight:700;margin-bottom:6px;color:#000;font-size:${isMobile ? '13px' : '14px'}">Institutions here (${uniq.length})</div>
               ${uniq.map(f => render(f.properties)).join("")}
             </div>`;
         } else {
           const p: any = uniq[0]?.properties || e.features?.[0]?.properties || {};
           html = `
-            <div style="font-family:system-ui,sans-serif;font-size:14px;color:#111;background:rgba(255,255,255,.96);border-radius:8px;padding:10px 14px;box-shadow:0 2px 8px rgba(0,0,0,.15);max-width:260px;line-height:1.5">
-              <div style="font-size:16px;font-weight:700;margin-bottom:6px;color:#000">${p.name}</div>
-              <div style="font-size:13px;color:#333;margin-bottom:8px">${p.country || "Unknown"}</div>
-              <div style="font-size:13px;margin-bottom:6px"><b style="color:#000">Papers:</b> ${p.paper_count}</div>
+            <div style="font-family:system-ui,sans-serif;font-size:${fontSize};color:#111;background:rgba(255,255,255,.96);border-radius:8px;padding:${padding};box-shadow:0 2px 8px rgba(0,0,0,.15);max-width:${maxWidth};line-height:1.4;word-wrap:break-word">
+              <div style="font-size:${isMobile ? '14px' : '16px'};font-weight:700;margin-bottom:6px;color:#000">${p.name}</div>
+              <div style="font-size:${isMobile ? '11px' : '13px'};color:#333;margin-bottom:8px">${p.country || "Unknown"}</div>
+              <div style="font-size:${isMobile ? '11px' : '13px'};margin-bottom:6px"><b style="color:#000">Papers:</b> ${p.paper_count}</div>
               ${render(p)}
             </div>`;
         }
@@ -268,25 +279,78 @@ export default function Page() {
     setMinCount(minPapers);
   };
 
+  // Handle window resize for responsive behavior
+  useEffect(() => {
+    const handleResize = () => {
+      // Close sidebar on mobile when switching to desktop
+      if (window.innerWidth >= 768) {
+        setSidebarOpen(false);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   return (
     <main className="w-screen h-screen relative">
-      {/* Sidebar (colours aligned with popup: dark text on soft white) */}
-      <div className="absolute left-3 top-3 z-10 rounded-xl shadow p-3 w-80 bg-white/95 backdrop-blur text-[#111]">
-        <div className="text-sm font-semibold mb-2 text-[#000]">Filter</div>
+      {/* Mobile Menu Button */}
+      <button
+        onClick={() => setSidebarOpen(!sidebarOpen)}
+        className="md:hidden absolute top-3 left-3 z-20 p-2 bg-white/95 backdrop-blur rounded-lg shadow-lg border border-gray-200 text-[#111]"
+        aria-label="Toggle filter menu"
+      >
+        <svg
+          className="w-5 h-5"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d={sidebarOpen ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16M4 18h16"}
+          />
+        </svg>
+      </button>
+
+      {/* Sidebar */}
+      <div className={`
+        absolute z-10 rounded-xl shadow bg-white/95 backdrop-blur text-[#111]
+        ${sidebarOpen ? 'block' : 'hidden md:block'}
+        top-3 left-3
+        w-[calc(100vw-1.5rem)] max-w-sm md:w-80 md:max-w-none
+        max-h-[calc(100vh-1.5rem)] md:max-h-none
+        overflow-y-auto
+        p-3 md:p-3
+      `}>
+        <div className="flex items-center justify-between mb-2">
+          <div className="text-sm font-semibold text-[#000]">Filter</div>
+          <button
+            onClick={() => setSidebarOpen(false)}
+            className="md:hidden p-1 hover:bg-gray-100 rounded"
+            aria-label="Close filter menu"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
 
         <label className="block text-xs mb-1 text-[#333]">Search (name or author)</label>
         <input
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder="e.g. Monash, Mandryk"
-          className="w-full mb-3 rounded border border-gray-300 px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 text-[#111] bg-white"
+          className="w-full mb-3 rounded border border-gray-300 px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 text-[#111] bg-white touch-manipulation"
         />
 
         <label className="block text-xs mb-1 text-[#333]">Country</label>
         <select
           value={country}
           onChange={(e) => setCountry(e.target.value)}
-          className="w-full mb-3 rounded border border-gray-300 px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 text-[#111] bg-white"
+          className="w-full mb-3 rounded border border-gray-300 px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 text-[#111] bg-white touch-manipulation"
         >
           {countries.map((c) => (
             <option key={c} value={c}>{c}</option>
@@ -302,15 +366,15 @@ export default function Page() {
           max={maxPapers}
           value={minCount}
           onChange={(e) => setMinCount(parseInt(e.target.value, 10))}
-          className="w-full mb-3"
+          className="w-full mb-3 touch-manipulation"
         />
 
-        <div className="flex items-center justify-between text-xs text-[#333]">
-          <span>Showing <b className="text-[#000]">{markers.length}</b> of {allMarkers.length}</span>
-          <div className="flex gap-2">
+        <div className="flex flex-col gap-2 text-xs text-[#333]">
+          <div>Showing <b className="text-[#000]">{markers.length}</b> of {allMarkers.length}</div>
+          <div className="flex flex-wrap gap-2">
             <button
               onClick={() => fitToMarkers(markers)}
-              className="text-xs px-3 py-1 rounded-md border border-gray-300 bg-white hover:bg-gray-100 text-[#111]"
+              className="flex-1 min-w-[120px] px-3 py-1.5 rounded-md border border-gray-300 bg-white hover:bg-gray-100 text-[#111] touch-manipulation"
               disabled={markers.length === 0}
               title="Zoom the map to the current results"
             >
@@ -318,7 +382,7 @@ export default function Page() {
             </button>
             <button
               onClick={resetFilters}
-              className="text-xs px-3 py-1 rounded-md border border-gray-300 bg-white hover:bg-gray-100 text-[#111]"
+              className="flex-1 min-w-[80px] px-3 py-1.5 rounded-md border border-gray-300 bg-white hover:bg-gray-100 text-[#111] touch-manipulation"
               title="Reset filters"
             >
               Reset
@@ -327,8 +391,16 @@ export default function Page() {
         </div>
       </div>
 
+      {/* Overlay for mobile */}
+      {sidebarOpen && (
+        <div
+          className="md:hidden fixed inset-0 bg-black/20 z-5"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
       {/* Map */}
-      <div ref={containerRef} className="w-full h-full" />
+      <div ref={containerRef} className="w-full h-full touch-manipulation" />
     </main>
   );
 }
