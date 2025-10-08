@@ -15,6 +15,11 @@ The Game Leadership Map is a data-driven web application that visualizes institu
 - **Responsive Design**: Clean, modern interface optimized for desktop and mobile
 - **Real-time Search**: Instant filtering as you type with support for institution names and author names
 
+## 📸 Screenshot
+
+![Game Leadership Map](public/website-screenshot.png)
+*Interactive map showing games research institutions worldwide with clustering and filtering capabilities*
+
 ## 🚀 Quick Start
 
 ### Prerequisites
