@@ -51,13 +51,6 @@ The **Game Leadership Map** reveals the international landscape of games researc
 
 ---
 
-## 📸 Screenshot
-
-![Game Leadership Map](public/website-screenshot.png)
-*Interactive map showing games research institutions worldwide with clustering and filtering capabilities.*
-
----
-
 ## 🚀 Quick Start
 
 ### Prerequisites
