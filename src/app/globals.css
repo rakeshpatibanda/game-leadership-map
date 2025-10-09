@@ -1,14 +1,23 @@
+/* globals.css
+ * -----------
+ * Global styles that apply to every page in the Next.js app. We bring in Tailwind's
+ * base styles and define CSS variables for colors and fonts so both custom CSS and
+ * Tailwind utilities stay in sync with the design tokens.
+ */
 @import "tailwindcss";
 
+/* Make the root elements fill the viewport and opt into border-box sizing everywhere. */
 html, body, :root { height: 100%; }
 * { box-sizing: border-box; }
 
 :root {
+  /* Default (light mode) color palette used across the site. */
   --background: #ffffff;
   --foreground: #171717;
 }
 
 @theme inline {
+  /* Expose the design tokens to Tailwind so utility classes reference the same values. */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
@@ -16,6 +25,7 @@ html, body, :root { height: 100%; }
 }
 
 @media (prefers-color-scheme: dark) {
+  /* Users with a dark-mode preference get the inverse color palette automatically. */
   :root {
     --background: #0a0a0a;
     --foreground: #ededed;
@@ -23,6 +33,7 @@ html, body, :root { height: 100%; }
 }
 
 body {
+  /* Use the tokenized colors and a sensible fallback font stack for body copy. */
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;

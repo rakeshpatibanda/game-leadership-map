@@ -1,9 +1,20 @@
+/**
+ * src/app/page.tsx
+ * -----------------
+ * This file is the main client-rendered page for the Game Leadership Map project.
+ * It fetches institution data, filters it with a user-friendly sidebar, and visualizes
+ * the results on an interactive MapLibre map. Everything from data loading to map
+ * lifecycle management happens inside this component.
+ */
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import maplibregl, { Map, Popup } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 
+// Defines the shape of each institution record that comes from the JSON feed.
+// Optional properties (`country`, `top_authors`) are present for most entries but
+// the code defensively handles them being missing or malformed.
 type Marker = {
   id: string;
   name: string;
@@ -14,38 +25,54 @@ type Marker = {
   top_authors?: string[];
 };
 
+/**
+ * Page renders an interactive MapLibre map of research institutions with convenient
+ * filtering controls. All map instance setup and lifecycle management happens here.
+ */
 export default function Page() {
+  // `containerRef` points to the <div> that MapLibre will render into.
+  // `mapRef` stores the live MapLibre instance so we can interact with it across hooks.
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<Map | null>(null);
   const [allMarkers, setAllMarkers] = useState<Marker[]>([]);
   const [loaded, setLoaded] = useState(false);
 
-  // UI state
+  // UI state: the free-text search, the country dropdown, the slider threshold,
+  // and whether the filter sidebar is showing on small screens.
   const [q, setQ] = useState("");
   const [country, setCountry] = useState("ALL");
   const [minCount, setMinCount] = useState(1);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  // Load data
+  // Load marker data once on mount. After the fetch resolves, store the raw markers and
+  // initialize the slider's minimum value so it matches the smallest dataset value.
+  // If the request fails, we log the error rather than crashing the page.
+  // Load marker data once on mount (now from the DB via API)
   useEffect(() => {
-    fetch("/data/institutions_markers.json")
-      .then((r) => r.json())
+    fetch("/api/markers", { cache: "no-store" })
+      .then((r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json();
+      })
       .then((data: Marker[]) => {
-        setAllMarkers(data);
-        const min = Math.min(...data.map((m) => m.paper_count));
+        setAllMarkers(data || []);
+        const min = data.length ? Math.min(...data.map((m) => m.paper_count)) : 1;
         setMinCount(Number.isFinite(min) ? Math.max(1, min) : 1);
       })
       .catch((e) => console.error("Failed to load markers:", e));
   }, []);
 
-  // Country options
+
+  // Derive the country dropdown options directly from the loaded markers. This keeps the
+  // UI consistent with the data and automatically includes new countries if the dataset grows.
   const countries = useMemo(() => {
     const s = new Set<string>();
     for (const m of allMarkers) if (m.country) s.add(m.country);
     return ["ALL", ...Array.from(s).sort()];
   }, [allMarkers]);
 
-  // Slider bounds
+  // Recalculate slider bounds whenever the data changes so the control accurately reflects
+  // the real minimum and maximum paper counts present in the dataset.
   const { minPapers, maxPapers } = useMemo(() => {
     if (allMarkers.length === 0) return { minPapers: 1, maxPapers: 1 };
     const min = Math.min(...allMarkers.map((m) => m.paper_count));
@@ -53,7 +80,9 @@ export default function Page() {
     return { minPapers: Math.max(1, min), maxPapers: max };
   }, [allMarkers]);
 
-  // Filtered markers
+  // Compute the filtered list of markers. We normalize the search text to lower case and
+  // check against both the institution name and top authors so partial matches still work.
+  // The memo keeps this cheap by recalculating only when the related state changes.
   const markers = useMemo(() => {
     const qlc = q.trim().toLowerCase();
     return allMarkers.filter((m) => {
@@ -68,7 +97,8 @@ export default function Page() {
     });
   }, [allMarkers, q, country, minCount]);
 
-  // Build GeoJSON
+  // Turn any list of markers into GeoJSON, the format MapLibre expects for data sources.
+  // We only copy the fields that the map layers and popups need.
   const toGeoJSON = (items: Marker[]): GeoJSON.FeatureCollection => ({
     type: "FeatureCollection",
     features: items.map((m) => ({
@@ -84,7 +114,9 @@ export default function Page() {
     })),
   });
 
-  // Helper: zoom to markers
+  // Helper: zoom the visible map region so every marker is framed nicely. For a single
+  // marker we jump straight to a reasonable zoom level; for multiple markers we expand
+  // a bounding box that encompasses every point and hand that to MapLibre.
   const fitToMarkers = (items: Marker[], pad = 40) => {
     const map = mapRef.current;
     if (!map || items.length === 0) return;
@@ -98,7 +130,14 @@ export default function Page() {
     map.fitBounds(b, { padding: pad, duration: 700 });
   };
 
-  // Init map
+  /**
+   * Initialize the MapLibre instance once there is data and the container is ready.
+   * The effect:
+   *   1. Creates the map with a base style and mobile-friendly interaction settings.
+   *   2. Adds the GeoJSON source and clustering layers.
+   *   3. Hooks up event handlers for clicks and cursor feedback.
+   *   4. Cleans up by removing the map on unmount or data change.
+   */
   useEffect(() => {
     if (!containerRef.current || mapRef.current || allMarkers.length === 0) return;
 
@@ -126,7 +165,8 @@ export default function Page() {
         clusterRadius: 35,
       });
 
-      // Cluster circles
+      // Cluster circles render groups of nearby markers. The color and radius scale with
+      // the number of institutions inside the cluster so dense regions stand out visually.
       map.addLayer({
         id: "clusters",
         type: "circle",
@@ -146,7 +186,7 @@ export default function Page() {
         },
       });
 
-      // Cluster counts
+      // Cluster counts overlay the number of institutions on top of each cluster bubble.
       map.addLayer({
         id: "cluster-count",
         type: "symbol",
@@ -156,7 +196,8 @@ export default function Page() {
         paint: { "text-color": "#ffffff" },
       });
 
-      // Unclustered points
+      // Unclustered points show individual institutions once the map is zoomed in enough
+      // that clustering is no longer necessary.
       map.addLayer({
         id: "unclustered",
         type: "circle",
@@ -170,7 +211,8 @@ export default function Page() {
         },
       });
 
-      // Cluster → zoom
+      // Clicking a cluster zooms in to reveal the constituent markers. MapLibre calculates
+      // the zoom level that will break the cluster apart and we animate the camera there.
       map.on("click", "clusters", (e) => {
         const fs = map.queryRenderedFeatures(e.point, { layers: ["clusters"] });
         const clusterId = fs[0]?.properties?.cluster_id;
@@ -181,7 +223,8 @@ export default function Page() {
         });
       });
 
-      // Stacked-point popup
+      // Clicking an individual marker builds a Popup. Because multiple institutions can share
+      // nearly identical coordinates, we query a small bounding box and display them together.
       map.on("click", "unclustered", (e) => {
         const pad = 10;
         const bbox: [[number, number], [number, number]] = [
@@ -190,6 +233,8 @@ export default function Page() {
         ];
         const feats = map.queryRenderedFeatures(bbox, { layers: ["unclustered"] });
 
+        // Deduplicate institutions so the popup lists each one only once even if MapLibre
+        // returns the same feature multiple times.
         const uniq: any[] = [];
         const seen = new Set<string>();
         for (const f of feats) {
@@ -199,6 +244,8 @@ export default function Page() {
           uniq.push(f);
         }
 
+        // Safely turn the stored author metadata into a human-friendly snippet. The dataset
+        // sometimes ships this value as a JSON string, so we guard against malformed cases.
         const render = (p: any) => {
           let tops: string[] = [];
           if (Array.isArray(p.top_authors)) tops = p.top_authors;
@@ -238,7 +285,7 @@ export default function Page() {
         new Popup().setLngLat(e.lngLat).setHTML(html).addTo(map);
       });
 
-      // Cursor hints
+      // Cursor hints for clickable layers improve affordance for new users.
       map.on("mouseenter", "clusters", () => (map.getCanvas().style.cursor = "pointer"));
       map.on("mouseleave", "clusters", () => (map.getCanvas().style.cursor = ""));
       map.on("mouseenter", "unclustered", () => (map.getCanvas().style.cursor = "pointer"));
@@ -250,7 +297,8 @@ export default function Page() {
     return () => map.remove();
   }, [allMarkers]);
 
-  // Update source on filter change
+  // Whenever the filtered results change, update the GeoJSON source so the map immediately
+  // reflects the new set of institutions.
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !loaded) return;
@@ -259,27 +307,28 @@ export default function Page() {
     src.setData(toGeoJSON(markers) as any);
   }, [markers, loaded]);
 
-  // Auto-zoom on country/min change
+  // Auto-zoom when country or minimum count changes to keep the map centered on relevant
+  // markers. A small timeout prevents rapid consecutive updates from feeling jumpy.
   useEffect(() => {
     if (!loaded) return;
     const id = setTimeout(() => fitToMarkers(markers), 150);
     return () => clearTimeout(id);
   }, [country, minCount, loaded]); // run when these change
 
-  // Auto-zoom when a single result
+  // Auto-zoom on single matches to focus the map on that institution immediately.
   useEffect(() => {
     if (!loaded) return;
     if (markers.length === 1) fitToMarkers(markers);
   }, [markers, loaded]);
 
-  // Reset filters
+  // Reset filters back to the dataset defaults.
   const resetFilters = () => {
     setQ("");
     setCountry("ALL");
     setMinCount(minPapers);
   };
 
-  // Handle window resize for responsive behavior
+  // Handle window resize to collapse the sidebar when jumping from mobile to desktop widths.
   useEffect(() => {
     const handleResize = () => {
       // Close sidebar on mobile when switching to desktop
@@ -292,6 +341,7 @@ export default function Page() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  // Main layout includes the responsive sidebar controls and the map canvas.
   return (
     <main className="w-screen h-screen relative">
       {/* Mobile Menu Button */}

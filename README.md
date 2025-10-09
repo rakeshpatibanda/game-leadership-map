@@ -1,90 +1,153 @@
 # Game Leadership Map
 
-A comprehensive interactive map visualization of games research institutions worldwide, showing the global landscape of academic institutions contributing to games research and their top researchers.
+> A global interactive map visualising academic and industry institutions conducting games research — powered by publication data from **CHI PLAY** and **OpenAlex**.
 
-## 🎮 Overview
+---
 
-The Game Leadership Map is a data-driven web application that visualizes institutions conducting games research across the globe. The map displays research institutions as interactive markers, clustered by geographic proximity, with detailed information about each institution's research output and leading authors.
+## Table of Contents
 
-### Key Features
+1. [Overview](#-overview)
+2. [Screenshot](#-screenshot)
+3. [Key Features](#-key-features)
+4. [Quick Start](#-quick-start)
+5. [Technology Stack](#-technology-stack)
+6. [Data Sources](#-data-sources)
+7. [Data Structure](#-data-structure)
+8. [Features in Detail](#-features-in-detail)
+9. [Project Structure](#-project-structure)
+10. [Development](#-development)
+11. [Database Workflow](#-database-workflow)
+12. [Data Refresh Workflow](#-data-refresh-workflow-contributors--maintainers)
+13. [Deployment](#-deployment)
+14. [Contributing](#-contributing)
+15. [Future Enhancements](#-future-enhancements)
+16. [License](#-license)
+17. [Acknowledgements](#-acknowledgements)
+18. [Support](#-support)
 
-- **Interactive World Map**: Powered by MapLibre GL, providing smooth zooming, panning, and clustering
-- **Research Data Visualization**: Shows institutions with their paper counts and top researchers
-- **Advanced Filtering**: Filter by institution name, country, and minimum paper count
-- **Smart Clustering**: Automatic clustering of nearby institutions with expandable clusters
-- **Responsive Design**: Clean, modern interface optimized for desktop and mobile
-- **Real-time Search**: Instant filtering as you type with support for institution names and author names
+---
+
+## 🌍 Overview
+
+The **Game Leadership Map** reveals the international landscape of games research. It surfaces where research happens, who contributes, and how institutions collaborate through shared publications. Data from **DBLP**, **OpenAlex**, and **ROR** is enriched and rendered via an interactive **MapLibre** interface backed by a **Prisma + SQLite** datastore.
+
+---
+
+## 📸 Screenshot
+
+![Game Leadership Map](public/website-screenshot.png)  
+*Interactive map showing games research institutions worldwide with clustering and filtering capabilities.*
+
+---
+
+## ✨ Key Features
+
+- **Interactive World Map** – Smooth zooming, panning, and clustering powered by MapLibre GL  
+- **Research Data Visualisation** – Displays institutions, paper counts, and top authors  
+- **Advanced Filtering** – Search by name, country, and paper count  
+- **Smart Clustering** – Automatic grouping with interactive expansion  
+- **Responsive Design** – Works seamlessly on desktop and mobile  
+- **Real-time Search** – Instant filtering by text or author name  
+
+---
 
 ## 📸 Screenshot
 
 ![Game Leadership Map](public/website-screenshot.png)
-*Interactive map showing games research institutions worldwide with clustering and filtering capabilities*
+*Interactive map showing games research institutions worldwide with clustering and filtering capabilities.*
+
+---
 
 ## 🚀 Quick Start
 
 ### Prerequisites
 
-- Node.js 18+ 
+- Node.js **v18+**
 - npm, yarn, pnpm, or bun
 
 ### Installation
 
 1. Clone the repository:
-```bash
-git clone <repository-url>
-cd game-leadership-map
-```
+   ```bash
+   git clone <repository-url>
+   cd game-leadership-map
+   ```
 
-2. Install dependencies:
+**Install dependencies:**
 ```bash
+Copy code
 npm install
 # or
 yarn install
-# or
-pnpm install
-# or
-bun install
 ```
 
-3. Start the development server:
+**Create a .env file (if it doesn’t exist) and set the database path:**
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+Copy code
+DATABASE_URL="file:./prisma/dev.db"
 ```
 
-4. Open [http://localhost:3000](http://localhost:3000) in your browser
+**Apply the database schema:**
+```bash
+Copy code
+npx prisma migrate deploy
+```
+
+**Seed the database with CHI PLAY papers, institutions, and authors:**
+```bash
+Copy code
+npm run db:seed
+```
+
+**Start the development server:**
+```bash
+Copy code
+npm run dev
+```
+
+Open http://localhost:3000 in your browser.
 
 ## 🛠️ Technology Stack
 
-- **Framework**: [Next.js 15.5.4](https://nextjs.org/) with App Router
-- **Frontend**: React 19.1.0 with TypeScript 5
-- **Mapping**: [MapLibre GL JS](https://maplibre.org/maplibre-gl-js/) for interactive maps
-- **Styling**: Tailwind CSS 4 for responsive design
-- **Build Tool**: Turbopack for fast development builds
+- Framework: Next.js 15.5.4 (App Router)
+- Frontend: React 19.1 + TypeScript 5
+- Mapping: MapLibre GL JS
+- Styling: Tailwind CSS 4
+- Database: SQLite via Prisma ORM
+- Build Tool: Turbopack for fast incremental builds
+
+## 📊 Data Sources
+
+- Raw source files live under data/ (ignored in Git by default):
+- chiplay_institutions_geo.json – Institution IDs with location metadata
+- chiplay_papers_with_doi.json – CHI PLAY papers enriched with DOIs
+- openalex_authorships.jsonl – OpenAlex authorship data linking authors and institutions
+- Running npm run db:seed parses these files and upserts records into the database.
 
 ## 📊 Data Structure
 
-The application uses a JSON dataset (`public/data/institutions_markers.json`) containing institutional research data:
+- The frontend consumes marker data from /api/markers.
+- That API route queries the SQLite database (via Prisma) for institutions, paper counts, and top authors, returning map-ready JSON.
+
+**Marker API payload**
 
 ```typescript
+Copy code
 type Marker = {
-  id: string;           // Unique identifier (e.g., "inst:ror:01aff2v68")
-  name: string;         // Institution name
-  country?: string;     // ISO2 country code (e.g., "CA", "US", "NL")
-  lat: number;          // Latitude coordinate
-  lng: number;          // Longitude coordinate
-  paper_count: number;  // Number of research papers
-  top_authors?: string[]; // Array of top researchers
-}
+  id: string;
+  name: string;
+  country?: string;
+  lat: number;
+  lng: number;
+  paper_count: number;
+  top_authors?: string[];
+};
 ```
 
-### Sample Data Entry
+**Sample API response**
+
 ```json
+Copy code
 {
   "id": "inst:ror:01aff2v68",
   "name": "University of Waterloo",
@@ -102,147 +165,270 @@ type Marker = {
 }
 ```
 
+**Database Tables**  
+Defined in prisma/schema.prisma:
+
+- Paper – CHI PLAY publications with DOI/OpenAlex IDs
+- Author – Unique researchers
+- Institution – Research organisations with geo metadata
+- Authorship – Links authors, institutions, and papers
+
 ## 🎯 Features in Detail
 
-### Interactive Map
-- **Base Map**: Uses MapLibre's demo style for consistent, professional appearance
-- **Clustering**: Automatic clustering of nearby markers with dynamic cluster sizing
-- **Zoom Controls**: Navigation controls in the top-right corner
-- **Responsive Clusters**: Different colors and sizes based on cluster density
+**Interactive Map**
 
-### Filtering System
-- **Text Search**: Search by institution name or author names
-- **Country Filter**: Dropdown to filter by specific countries
-- **Paper Count Slider**: Minimum paper count threshold filter
-- **Reset Function**: One-click reset to clear all filters
+- Base map via MapLibre demo style
+- Clustering with adaptive circle size and colour
+- Zoom controls in top-right corner
+- Smooth animation and responsive behaviour
 
-### Data Visualization
-- **Color Coding**: 
-  - Blue clusters for grouped institutions
-  - Red markers for individual institutions
-  - Gradient colors based on cluster size
-- **Popup Information**: Detailed popups showing:
-  - Institution name and location
+**Filtering System**
+
+- Search by institution or author name
+- Country dropdown filter
+- Slider for minimum paper count
+- Reset and zoom-to-results buttons
+
+**Data Visualisation**
+
+- Blue clusters for grouped institutions
+- Red markers for individual points
+- Popup overlays showing:
+  - Institution name and country
   - Paper count
   - Top researchers
-  - Support for stacked markers
 
-### User Experience
-- **Auto-zoom**: Automatically fits view to filtered results
-- **Smooth Animations**: 700ms easing for map transitions
-- **Loading States**: Proper loading indicators during data fetch
-- **Error Handling**: Graceful error handling for data loading failures
+**User Experience**
+
+- Auto-zoom on filter change or single result
+- 700 ms map transition easing
+- Graceful error handling
 
 ## 📁 Project Structure
 
-```
+```graphql
+Copy code
 game-leadership-map/
-├── public/
-│   └── data/
-│       └── institutions_markers.json  # Research data
+├── data/                          # Raw CHI PLAY + OpenAlex datasets for seeding
+│   ├── chiplay_institutions_geo.json
+│   ├── chiplay_papers_with_doi.json
+│   └── openalex_authorships.jsonl
+├── prisma/
+│   ├── migrations/
+│   ├── dev.db                     # SQLite database
+│   ├── schema.prisma              # Prisma models
+│   └── seed.js                    # ETL script for seeding
+├── public/                        # Static assets (logos, screenshot, etc.)
 ├── src/
 │   └── app/
-│       ├── globals.css               # Global styles
-│       ├── layout.tsx                # App layout
-│       └── page.tsx                  # Main map component
-├── package.json                      # Dependencies
-├── next.config.ts                    # Next.js configuration
-├── tailwind.config.js                # Tailwind CSS config
-├── tsconfig.json                     # TypeScript config
-└── README.md                         # This file
+│       ├── api/markers/route.ts   # Marker API route
+│       ├── globals.css
+│       ├── layout.tsx
+│       └── page.tsx               # Main map component
+├── package.json
+├── next.config.ts
+├── tsconfig.json
+└── README.md
 ```
 
 ## 🔧 Development
 
-### Available Scripts
+**Available Scripts**
 
-- `npm run dev` - Start development server with Turbopack
-- `npm run build` - Build for production with Turbopack
-- `npm run start` - Start production server
+- npm run dev – Start dev server
+- npm run build – Production build
+- npm run start – Run built app
+- npm run db:seed – Refresh the database with new data
 
-### Code Architecture
+## 🧱 Database Workflow
 
-The main component (`src/app/page.tsx`) is organized into several key sections:
+- Migrations – Run npx prisma migrate deploy or npx prisma migrate reset
+- Seeding – Run npm run db:seed to rebuild the DB from files in /data/
+- Inspection – Run npx prisma studio to browse and validate data visually
 
-1. **State Management**: React hooks for data, filters, and map state
-2. **Data Loading**: Effect hook for fetching institution data
-3. **Map Initialization**: MapLibre GL setup with clustering and styling
-4. **Filter Logic**: Computed values for filtering and country options
-5. **Event Handlers**: Click handlers for clusters and individual markers
-6. **UI Components**: Sidebar with filter controls and map container
+## 🔁 Data Refresh Workflow (Contributors & Maintainers)
+This workflow explains how to update the data used by the Game Leadership Map when new research (e.g., CHI PLAY 2025 papers) becomes available.
+All data files live inside the top-level data/ directory and are loaded into the database through Prisma.
 
-### Key Implementation Details
+### 📂 Directory Overview
 
-- **Clustering**: Uses MapLibre's built-in clustering with custom styling
-- **GeoJSON**: Converts marker data to GeoJSON format for map rendering
-- **Performance**: Efficient filtering with useMemo hooks
-- **Accessibility**: Proper ARIA labels and keyboard navigation support
+```bash
+Copy code
+data/
+├── chiplay_institutions_geo.json     # Institution names, countries, and coordinates
+├── chiplay_papers_with_doi.json      # CHI PLAY paper metadata with DOIs
+└── openalex_authorships.jsonl        # Author–paper–institution relationships
+```
+### 🧠 Understanding Each File
+
+#### 1. chiplay_institutions_geo.json
+
+- Purpose: Lists all institutions on the map.
+- Used for: Marker placement and country filters.
+- Format:
+  ```json
+  Copy code
+  [
+    {
+      "id": "inst:ror:01aff2v68",
+      "name": "University of Waterloo",
+      "country": "CA",
+      "lat": 43.4668,
+      "lng": -80.51639
+    }
+  ]
+  ```
+- Update steps:
+  - Add new institutions from CHI PLAY proceedings.
+  - Verify IDs on ror.org.
+  - Add coordinates from OpenStreetMap or Google Maps.
+
+#### 2. chiplay_papers_with_doi.json
+
+- Purpose: Stores CHI PLAY paper metadata.
+- Used for: Linking authorships and counting papers.
+- Format:
+  ```json
+  Copy code
+  [
+    {
+      "dblpKey": "conf/chiplay/Smith2025",
+      "title": "Designing Playful Health Technologies",
+      "year": 2025,
+      "venue": "CHI PLAY 2025",
+      "doi": "10.1145/1234567.1234568",
+      "openalexId": "W123456789",
+      "authorships": [
+        { "author_name": "Jane Smith", "institution_id": "inst:ror:01aff2v68", "author_order": 1 }
+      ]
+    }
+  ]
+  ```
+- Update steps:
+  - Get latest data from DBLP.
+  - Add new entries for the latest year.
+  - Add DOIs (from ACM Digital Library).
+  - Include openalexId if available.
+
+#### 3. openalex_authorships.jsonl
+
+- Purpose: Defines author–paper–institution relationships.
+- Used for: Counting top authors per institution.
+- Format:
+  ```json
+  Copy code
+  {"author": "Jane Smith", "paper_doi": "10.1145/1234567.1234568", "institution_id": "inst:ror:01aff2v68", "order": 1}
+  {"author": "John Doe", "paper_doi": "10.1145/2345678.2345679", "institution_id": "inst:ror:03y9q1t90", "order": 2}
+  ```
+- Update steps:
+  - Add or update entries for new papers.
+  - Ensure all DOIs match those in chiplay_papers_with_doi.json.
+  - Keep order numeric (e.g., 1, 2).
+
+### ⚙️ Seeding the Database
+
+```bash
+Copy code
+npm run db:seed
+```
+
+This reads data from /data/, inserts it into prisma/dev.db, and rebuilds all relationships automatically.
+
+### 🔍 Verify in Prisma Studio
+
+```bash
+Copy code
+npx prisma studio
+```
+
+- Check institution coordinates
+- Verify paper counts
+- Confirm author–institution links
+
+### 🔄 Restart the App
+
+```bash
+Copy code
+npm run dev
+```
+
+Visit http://localhost:3000 to confirm updates.
+
+### 💡 Common Checks
+
+| Issue | Fix |
+|-------|-----|
+| Institution not visible | Add valid lat/lng |
+| Duplicates | Merge by ROR id |
+| Paper missing DOI | Still loads, but won’t link to OpenAlex |
+| JSON syntax errors | Validate via jsonlint.com |
+| Author order invalid | Must be a number |
+
+### ✅ Final Checklist
+
+- JSON and JSONL files validate correctly
+- ROR IDs are unique
+- DOIs match between files
+- Prisma Studio shows expected counts
+- Map updates correctly
+
+### TL;DR Summary
+
+```bash
+Copy code
+# Edit files in /data
+npm run db:seed
+npx prisma studio
+npm run dev
+```
 
 ## 🚀 Deployment
 
-### Vercel (Recommended)
+**Vercel (Recommended)**
 
-1. Push your code to GitHub
-2. Connect your repository to [Vercel](https://vercel.com)
-3. Deploy with zero configuration
+- Push your code to GitHub.
+- Connect to Vercel.
+- Deploy automatically — no config required.
 
-### Other Platforms
-
-The app can be deployed to any platform that supports Next.js:
-- Netlify
-- Railway
-- AWS Amplify
-- DigitalOcean App Platform
-
-### Build Command
-```bash
-npm run build
-```
+Other supported platforms: Netlify, Railway, AWS Amplify, DigitalOcean.
 
 ## 🤝 Contributing
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+- Fork the repo
+- Create a feature branch
+- Commit, push, and open a Pull Request
 
-### Development Guidelines
+**Guidelines:**
 
-- Use TypeScript for all new code
-- Follow the existing code style and patterns
-- Add proper error handling
-- Test on multiple screen sizes
-- Ensure accessibility compliance
+- Use TypeScript
+- Follow existing code style
+- Test responsiveness and accessibility
 
 ## 📈 Future Enhancements
 
-- [ ] Add data export functionality
-- [ ] Implement advanced analytics dashboard
-- [ ] Add timeline visualization for research trends
-- [ ] Support for additional research metrics
-- [ ] Dark mode theme
-- [ ] Mobile-optimized touch interactions
-- [ ] Data update automation
-- [ ] Institution comparison tools
+- Research timeline visualisation
+- Analytics dashboard
+- Institution comparison tools
+- Dark mode
+- Automatic dataset updates
 
 ## 📄 License
 
-This project is open source and available under the [MIT License](LICENSE).
+Open source under the MIT License.
 
-## 🙏 Acknowledgments
+## 🙏 Acknowledgements
 
-- Built with [Next.js](https://nextjs.org/) and [MapLibre GL](https://maplibre.org/)
-- Research data curated from academic publications
-- Inspired by the global games research community
+- Built with Next.js and MapLibre GL
+- Data sourced from CHI PLAY and OpenAlex
+
+---
+Inspired by the global games research community
 
 ## 📞 Support
 
-For questions, issues, or contributions, please:
 - Open an issue on GitHub
 - Contact the maintainers
 - Check the documentation
 
----
-
-**Made with ❤️ for the games research community**
+**Made with ❤️ for the Games Research Community**  
+Visualising the people and places shaping play around the world.
