@@ -68,7 +68,7 @@ The **Game Leadership Map** reveals the international landscape of games researc
 
 **Install dependencies:**
 ```bash
-Copy code
+ 
 npm install
 # or
 yarn install
@@ -76,25 +76,25 @@ yarn install
 
 **Create a .env file (if it doesn’t exist) and set the database path:**
 ```bash
-Copy code
+
 DATABASE_URL="file:./prisma/dev.db"
 ```
 
 **Apply the database schema:**
 ```bash
-Copy code
+ 
 npx prisma migrate deploy
 ```
 
 **Seed the database with CHI PLAY papers, institutions, and authors:**
 ```bash
-Copy code
+ 
 npm run db:seed
 ```
 
 **Start the development server:**
 ```bash
-Copy code
+ 
 npm run dev
 ```
 
@@ -125,7 +125,7 @@ Open http://localhost:3000 in your browser.
 **Marker API payload**
 
 ```typescript
-Copy code
+ 
 type Marker = {
   id: string;
   name: string;
@@ -140,7 +140,7 @@ type Marker = {
 **Sample API response**
 
 ```json
-Copy code
+ 
 {
   "id": "inst:ror:01aff2v68",
   "name": "University of Waterloo",
@@ -200,7 +200,7 @@ Defined in prisma/schema.prisma:
 ## 📁 Project Structure
 
 ```graphql
-Copy code
+ 
 game-leadership-map/
 ├── data/                          # Raw CHI PLAY + OpenAlex datasets for seeding
 │   ├── chiplay_institutions_geo.json
@@ -246,7 +246,7 @@ All data files live inside the top-level data/ directory and are loaded into the
 ### 📂 Directory Overview
 
 ```bash
-Copy code
+ 
 data/
 ├── chiplay_institutions_geo.json     # Institution names, countries, and coordinates
 ├── chiplay_papers_with_doi.json      # CHI PLAY paper metadata with DOIs
@@ -260,7 +260,7 @@ data/
 - Used for: Marker placement and country filters.
 - Format:
   ```json
-  Copy code
+   
   [
     {
       "id": "inst:ror:01aff2v68",
@@ -282,7 +282,7 @@ data/
 - Used for: Linking authorships and counting papers.
 - Format:
   ```json
-  Copy code
+   
   [
     {
       "dblpKey": "conf/chiplay/Smith2025",
@@ -309,7 +309,7 @@ data/
 - Used for: Counting top authors per institution.
 - Format:
   ```json
-  Copy code
+   
   {"author": "Jane Smith", "paper_doi": "10.1145/1234567.1234568", "institution_id": "inst:ror:01aff2v68", "order": 1}
   {"author": "John Doe", "paper_doi": "10.1145/2345678.2345679", "institution_id": "inst:ror:03y9q1t90", "order": 2}
   ```
@@ -321,7 +321,7 @@ data/
 ### ⚙️ Seeding the Database
 
 ```bash
-Copy code
+ 
 npm run db:seed
 ```
 
@@ -330,7 +330,7 @@ This reads data from /data/, inserts it into prisma/dev.db, and rebuilds all rel
 ### 🔍 Verify in Prisma Studio
 
 ```bash
-Copy code
+ 
 npx prisma studio
 ```
 
@@ -341,7 +341,7 @@ npx prisma studio
 ### 🔄 Restart the App
 
 ```bash
-Copy code
+ 
 npm run dev
 ```
 
@@ -368,7 +368,7 @@ Visit http://localhost:3000 to confirm updates.
 ### TL;DR Summary
 
 ```bash
-Copy code
+ 
 # Edit files in /data
 npm run db:seed
 npx prisma studio
