@@ -18,12 +18,13 @@
 10. [Development](#-development)
 11. [Database Workflow](#-database-workflow)
 12. [Data Refresh Workflow](#-data-refresh-workflow-contributors--maintainers)
-13. [Deployment](#-deployment)
-14. [Contributing](#-contributing)
-15. [Future Enhancements](#-future-enhancements)
-16. [License](#-license)
-17. [Acknowledgements](#-acknowledgements)
-18. [Support](#-support)
+13. [Automating Refreshes](#-automating-refreshes)
+14. [Deployment](#-deployment)
+15. [Contributing](#-contributing)
+16. [Future Enhancements](#-future-enhancements)
+17. [License](#-license)
+18. [Acknowledgements](#-acknowledgements)
+19. [Support](#-support)
 
 ---
 
@@ -240,18 +241,18 @@ game-leadership-map/
 - Inspection – Run npx prisma studio to browse and validate data visually
 
 ## 🔁 Data Refresh Workflow (Contributors & Maintainers)
-This workflow explains how to update the data used by the Game Leadership Map when new research (e.g., CHI PLAY 2025 papers) becomes available.
-All data files live inside the top-level data/ directory and are loaded into the database through Prisma.
+
+This workflow explains how to update the data used by the Game Leadership Map when new research (e.g., CHI PLAY 2025 papers) becomes available. All data files live inside the top-level `data/` directory and are loaded into the database through Prisma.
 
 ### 📂 Directory Overview
 
 ```bash
- 
 data/
 ├── chiplay_institutions_geo.json     # Institution names, countries, and coordinates
 ├── chiplay_papers_with_doi.json      # CHI PLAY paper metadata with DOIs
 └── openalex_authorships.jsonl        # Author–paper–institution relationships
 ```
+
 ### 🧠 Understanding Each File
 
 #### 1. chiplay_institutions_geo.json
@@ -260,7 +261,6 @@ data/
 - Used for: Marker placement and country filters.
 - Format:
   ```json
-   
   [
     {
       "id": "inst:ror:01aff2v68",
@@ -282,7 +282,6 @@ data/
 - Used for: Linking authorships and counting papers.
 - Format:
   ```json
-   
   [
     {
       "dblpKey": "conf/chiplay/Smith2025",
@@ -309,28 +308,25 @@ data/
 - Used for: Counting top authors per institution.
 - Format:
   ```json
-   
   {"author": "Jane Smith", "paper_doi": "10.1145/1234567.1234568", "institution_id": "inst:ror:01aff2v68", "order": 1}
   {"author": "John Doe", "paper_doi": "10.1145/2345678.2345679", "institution_id": "inst:ror:03y9q1t90", "order": 2}
   ```
 - Update steps:
   - Add or update entries for new papers.
-  - Ensure all DOIs match those in chiplay_papers_with_doi.json.
-  - Keep order numeric (e.g., 1, 2).
+  - Ensure all DOIs match those in `chiplay_papers_with_doi.json`.
+  - Keep `order` numeric (e.g., 1, 2).
 
 ### ⚙️ Seeding the Database
 
 ```bash
- 
 npm run db:seed
 ```
 
-This reads data from /data/, inserts it into prisma/dev.db, and rebuilds all relationships automatically.
+This reads data from `data/`, inserts it into `prisma/dev.db`, and rebuilds all relationships automatically.
 
 ### 🔍 Verify in Prisma Studio
 
 ```bash
- 
 npx prisma studio
 ```
 
@@ -341,18 +337,17 @@ npx prisma studio
 ### 🔄 Restart the App
 
 ```bash
- 
 npm run dev
 ```
 
-Visit http://localhost:3000 to confirm updates.
+Visit <http://localhost:3000> to confirm updates.
 
 ### 💡 Common Checks
 
 | Issue | Fix |
 |-------|-----|
 | Institution not visible | Add valid lat/lng |
-| Duplicates | Merge by ROR id |
+| Duplicates | Merge by ROR ID |
 | Paper missing DOI | Still loads, but won’t link to OpenAlex |
 | JSON syntax errors | Validate via jsonlint.com |
 | Author order invalid | Must be a number |
@@ -368,12 +363,93 @@ Visit http://localhost:3000 to confirm updates.
 ### TL;DR Summary
 
 ```bash
- 
 # Edit files in /data
 npm run db:seed
 npx prisma studio
 npm run dev
 ```
+
+## 🧰 Automating Refreshes
+
+To make it easier for contributors and maintainers to update the local SQLite database with new data files, the project includes a ready-to-use automation script.
+
+### 1. Manual refresh (recommended for local development)
+
+You can refresh your database anytime with a single command:
+
+```bash
+npm run refresh
+```
+
+This command runs the script `scripts/refresh_data.sh`, which:
+
+- Validates that the required data files exist in `/data`
+  (`chiplay_institutions_geo.json`, `chiplay_papers_with_doi.json`, and `openalex_authorships.jsonl`)
+- Backs up your existing SQLite database (`prisma/dev.db`) to `/backups`
+- Applies any pending Prisma migrations
+- Seeds the database with the latest CHI PLAY and OpenAlex data using `npm run db:seed`
+- Logs the entire process with timestamps in `/logs`
+- Verifies that the number of institutions, authors, and papers imported looks correct (if `sqlite3` is installed)
+
+This process is idempotent, meaning it’s safe to rerun — each seed operation upserts existing records instead of duplicating them.
+
+### 2. What happens behind the scenes
+
+The script performs the following sequence:
+
+1. Create or reuse `/logs` and `/backups` directories
+2. Lock the process to prevent parallel runs
+3. (Optional) Pull latest changes from git if configured
+4. Install dependencies (`npm ci`)
+5. Backup current `dev.db`
+6. Validate data files in `/data`
+7. Run Prisma migrations
+8. Run seeding (`npm run db:seed`)
+9. Log record counts
+10. (Optional) Build or reload the app
+11. Unlock and exit cleanly
+
+All actions and errors are logged to `logs/refresh_YYYYMMDD_HHMMSS.log` for traceability.
+
+### 3. Optional automation for servers
+
+If you’re deploying this project on a server and want the data to stay current automatically, you can schedule the refresh script with cron.
+
+Example (runs nightly at 02:30):
+
+```cron
+30 2 * * * /bin/bash /ABSOLUTE/PATH/TO/scripts/refresh_data.sh >> /ABSOLUTE/PATH/TO/logs/cron.log 2>&1
+```
+
+This setup:
+
+- Keeps the database in sync without manual intervention
+- Automatically backs up old database versions
+- Writes every run’s output to a single rolling log
+
+You can also enable optional flags inside the script:
+
+- `GIT_PULL=1` to fetch latest commits before seeding
+- `DO_BUILD=1` to rebuild the app after seeding
+- `PM2_APP_NAME="game-leadership-map"` to reload a running Node app after seeding
+
+### 4. When to use automation
+
+| Situation              | Recommended Action                                           |
+|------------------------|--------------------------------------------------------------|
+| Local development      | Use `npm run refresh` manually                               |
+| Team/shared environment| Schedule cron job                                            |
+| Production server      | Enable `GIT_PULL`, `DO_BUILD`, and `PM2_APP_NAME` in cron or environment |
+| Data-only updates      | Copy new files into `/data` and rerun the script             |
+
+In short:  
+For contributors, just update the JSON/JSONL files in `/data` and run:
+
+```bash
+npm run refresh
+```
+
+For maintainers or production servers, automate the same script using cron for nightly refreshes.
 
 ## 🚀 Deployment
 

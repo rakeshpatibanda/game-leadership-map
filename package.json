@@ -6,6 +6,7 @@
     "dev": "next dev --turbopack",
     "build": "next build --turbopack",
     "start": "next start",
+    "refresh": "bash scripts/refresh_data.sh",
     "db:seed": "node prisma/seed.js"
   },
   "dependencies": {

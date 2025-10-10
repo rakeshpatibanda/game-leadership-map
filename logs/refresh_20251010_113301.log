@@ -1,0 +1,42 @@
+2025-10-10 11:33:01 [INFO] Starting refresh in /Users/Rakesh/Documents/personal/game-leadership-map
+2025-10-10 11:33:01 [INFO] Installing deps (npm ci)…
+2025-10-10 11:33:12 [INFO] Backed up DB to /Users/Rakesh/Documents/personal/game-leadership-map/backups/dev_20251010_113312.db
+2025-10-10 11:33:12 [INFO] Applying Prisma migrations…
+Environment variables loaded from .env
+Prisma schema loaded from prisma/schema.prisma
+Datasource "db": SQLite database "dev.db" at "file:./dev.db"
+
+1 migration found in prisma/migrations
+
+
+No pending migrations to apply.
+2025-10-10 11:33:12 [INFO] Seeding database (npm run db:seed)…
+
+> games-research-map@0.1.0 db:seed
+> node prisma/seed.js
+
+Institutions (geo) upserted: 681
+  papers upserted: 200
+  papers upserted: 400
+  papers upserted: 600
+  papers upserted: 800
+  papers upserted: 1000
+  papers upserted: 1200
+Papers upserted: 1243
+  processed: 200 | links: 752
+  processed: 400 | links: 1513
+  processed: 600 | links: 2302
+  ↪︎ skip DOI (in use by conf/chiplay/RappCHHL16): 10.1145/2968120.2968125
+  ↪︎ skip OpenAlex ID (in use by conf/chiplay/RappCHHL16): https://openalex.org/W2531836687
+  processed: 800 | links: 2985
+  processed: 1000 | links: 3691
+  processed: 1200 | links: 4433
+  processed: 1400 | links: 5237
+  processed: 1600 | links: 5996
+Authorships: linked=6402 | skipped=0 | papers missing=0
+2025-10-10 11:33:19 [INFO] Post-seed counts:
+  Institutions  716
+  Authors       3054
+  Papers        1243
+  Authorships   4606
+2025-10-10 11:33:19 [INFO] Refresh complete. Log: /Users/Rakesh/Documents/personal/game-leadership-map/logs/refresh_20251010_113301.log
