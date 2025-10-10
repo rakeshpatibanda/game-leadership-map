@@ -145,6 +145,58 @@ Steps:
 - Save to `/_papers_with_doi.json` (temporary, refine in later steps).
 - Keep a column for `source` (e.g., `"CHI 2025 Proceedings"`) if you intend to add filter UI later.
 - Document any manual corrections in a changelog (e.g., `docs/data-notes.md`) so the team remembers why titles or venues were adjusted.
+- Sample script (Python) to fetch CHI papers for a specific year and export JSON:
+
+```python
+#!/usr/bin/env python3
+# scripts/export_dblp_papers.py
+import json
+import re
+import requests
+from bs4 import BeautifulSoup
+
+BASE_URL = "https://dblp.org/db/conf/chi/"
+YEAR = 2025
+OUTPUT = f"data/chi_{YEAR}_papers_with_doi.json"
+
+def slugify(title: str) -> str:
+    return re.sub(r"[^a-z0-9]+", "-", title.lower()).strip("-")
+
+def fetch_entries():
+    url = f"{BASE_URL}chi{YEAR}.html?view=bibtex"
+    res = requests.get(url, timeout=30)
+    res.raise_for_status()
+    soup = BeautifulSoup(res.text, "html.parser")
+    entries = []
+    for bib in soup.select("pre"):
+        text = bib.get_text()
+        # Very rough parsing; replace with bibtexparser if preferred
+        key_match = re.search(r"@inproceedings{([^,]+),", text)
+        title_match = re.search(r"title\s*=\s*{([^}]+)}", text)
+        doi_match = re.search(r"doi\s*=\s*{([^}]+)}", text)
+        year_match = re.search(r"year\s*=\s*{([^}]+)}", text)
+        if not key_match or not title_match:
+            continue
+        entries.append({
+            "dblpKey": key_match.group(1),
+            "title": title_match.group(1),
+            "year": int(year_match.group(1)) if year_match else YEAR,
+            "venue": f"CHI {YEAR}",
+            "doi": doi_match.group(1) if doi_match else None,
+            "source": f"CHI {YEAR} Proceedings",
+            "authors": [],  # fill in later
+        })
+    return entries
+
+def main():
+    papers = fetch_entries()
+    with open(OUTPUT, "w", encoding="utf-8") as fh:
+        json.dump(papers, fh, indent=2)
+    print(f"Wrote {len(papers)} entries to {OUTPUT}")
+
+if __name__ == "__main__":
+    main()
+```
 
 ### 4.2 Ensure DOIs
 
@@ -155,6 +207,49 @@ Steps:
   - As fallback, use Crossref search by title + year.
 - Add the DOI string (`10.xxxx/...`) to each paper.
 - If no DOI exists, leave null: the system will seed but some automation will skip linking.
+- Sample snippet (Node.js) that enriches papers with DOIs via the Crossref API when missing:
+
+```javascript
+#!/usr/bin/env node
+// scripts/enrich_doi.js
+import fs from "node:fs";
+import fetch from "node-fetch";
+
+const INPUT = "data/chi_2025_papers_with_doi.json";
+const OUTPUT = INPUT; // overwrite in place; change if you prefer backup
+
+const papers = JSON.parse(fs.readFileSync(INPUT, "utf8"));
+
+async function lookupDOI(title, year) {
+  const params = new URLSearchParams({
+    query: title,
+    rows: "1",
+    "filter": `from-pub-date:${year}-01-01,until-pub-date:${year}-12-31`,
+  });
+  const res = await fetch(`https://api.crossref.org/works?${params.toString()}`, {
+    headers: { "User-Agent": "GameLeadershipMap/1.0 (mailto:your-email@example.com)" },
+  });
+  if (!res.ok) return null;
+  const json = await res.json();
+  return json?.message?.items?.[0]?.DOI ?? null;
+}
+
+const enrich = async () => {
+  for (const paper of papers) {
+    if (paper.doi) continue;
+    const doi = await lookupDOI(paper.title, paper.year);
+    console.log(`Title: ${paper.title}\n  DOI: ${doi ?? "not found"}`);
+    if (doi) paper.doi = doi;
+    await new Promise((r) => setTimeout(r, 1100)); // be kind to Crossref
+  }
+  fs.writeFileSync(OUTPUT, JSON.stringify(papers, null, 2));
+};
+
+enrich().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});
+```
 
 ### 4.3 Create authorship links (OpenAlex)
 
@@ -180,6 +275,59 @@ Rate limit tips:
 - An alternative: download the venue’s dataset via OpenAlex filters.
 - When a DOI returns multiple institutions, include them all; MapLibre clusters handle duplicates gracefully and users benefit from complete affiliation data.
 - If an author has no listed institution, create a sentinel entry like `inst:name:independent-researcher` and add a note in the appendix.
+- Sample script (Python) that reads the papers JSON and writes `openalex_authorships.jsonl`:
+
+```python
+#!/usr/bin/env python3
+# scripts/export_authorships.py
+import json
+import time
+import requests
+
+INPUT = "data/chi_2025_papers_with_doi.json"
+OUTPUT = "data/openalex_authorships.jsonl"
+
+def inst_id(record):
+    ror = record.get("ror")
+    if ror:
+        return f"inst:ror:{ror.split('/')[-1]}"
+    name = record.get("display_name", "Unknown Institution")
+    slug = "".join(ch.lower() if ch.isalnum() else "-" for ch in name).strip("-")
+    return f"inst:name:{slug or 'unknown'}"
+
+def fetch_work(doi):
+    url = f"https://api.openalex.org/works/https://doi.org/{doi}"
+    res = requests.get(url, timeout=30)
+    if res.status_code == 404:
+        return None
+    res.raise_for_status()
+    return res.json()
+
+with open(INPUT, "r", encoding="utf-8") as fh:
+    papers = json.load(fh)
+
+with open(OUTPUT, "w", encoding="utf-8") as out:
+    for paper in papers:
+        if not paper.get("doi"):
+            continue
+        work = fetch_work(paper["doi"])
+        if not work:
+            print(f"Skipping absent DOI {paper['doi']}")
+            continue
+        for position, authorship in enumerate(work.get("authorships", []), start=1):
+            author = authorship.get("author", {})
+            institutions = authorship.get("institutions", []) or [{}]
+            for inst in institutions:
+                out.write(json.dumps({
+                    "author": author.get("display_name", "Unknown Author"),
+                    "paper_doi": paper["doi"],
+                    "institution_id": inst_id(inst),
+                    "order": position,
+                }, ensure_ascii=False))
+                out.write("\n")
+        time.sleep(1)  # throttle to respect OpenAlex
+print(f"Wrote authorships to {OUTPUT}")
+```
 
 ### 4.4 Create institutions with geo
 
@@ -209,6 +357,64 @@ Goal: ensure every institution has geolocation.
 Ensure IDs match those in `openalex_authorships.jsonl`.
 - If a single institution spans multiple campuses, pick the HQ coordinates or create separate IDs (e.g., `inst:ror:abc123-campus-1`) and document the convention so future updates remain consistent.
 - Consider adding a `type` field (`"University"`, `"Company"`, `"Nonprofit"`) to support UI legends later.
+- Example Node.js snippet to generate the geo file by querying ROR:
+
+```javascript
+#!/usr/bin/env node
+// scripts/export_institutions_geo.js
+import fs from "node:fs";
+import fetch from "node-fetch";
+
+const AUTH_INPUT = "data/openalex_authorships.jsonl";
+const OUTPUT = "data/chiplay_institutions_geo.json";
+
+const lines = fs.readFileSync(AUTH_INPUT, "utf8").trim().split("\n");
+const uniqueInst = new Map();
+
+for (const line of lines) {
+  const rec = JSON.parse(line);
+  uniqueInst.set(rec.institution_id, rec.author);
+}
+
+const lookupROR = async (instId) => {
+  if (!instId.startsWith("inst:ror:")) return null;
+  const rorId = instId.replace("inst:ror:", "");
+  const res = await fetch(`https://api.ror.org/organizations/${rorId}`, { timeout: 30000 });
+  if (!res.ok) return null;
+  return res.json();
+};
+
+const slugToName = (instId) =>
+  instId.replace("inst:name:", "")
+    .split("-")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+
+const main = async () => {
+  const results = [];
+  for (const instId of uniqueInst.keys()) {
+    let record = { id: instId, name: slugToName(instId), country: null, lat: null, lng: null };
+    const rorData = await lookupROR(instId);
+    if (rorData) {
+      record.name = rorData.name;
+      record.country = rorData.country?.country_code ?? null;
+      const loc = rorData.locations?.[0];
+      record.lat = loc?.latitude ?? null;
+      record.lng = loc?.longitude ?? null;
+      record.type = rorData.types?.[0] ?? null;
+    }
+    results.push(record);
+    await new Promise((r) => setTimeout(r, 500)); // avoid hammering ROR
+  }
+  fs.writeFileSync(OUTPUT, JSON.stringify(results, null, 2));
+  console.log(`Wrote ${results.length} institutions to ${OUTPUT}`);
+};
+
+main().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});
+```
 
 ### 4.5 Validate files
 
