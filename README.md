@@ -458,6 +458,7 @@ For maintainers or production servers, automate the same script using cron for n
 - Push your code to GitHub.
 - Connect to Vercel.
 - Deploy automatically — no config required.
+- Need the full walkthrough (including Neon/Postgres setup)? See [DEPLOYMENT.md](DEPLOYMENT.md) for step-by-step instructions.
 
 Other supported platforms: Netlify, Railway, AWS Amplify, DigitalOcean.
 
