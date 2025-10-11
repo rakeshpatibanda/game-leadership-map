@@ -33,6 +33,8 @@ model Institution {
   lng         Float?
   type        String?
   authorships Authorship[]
+  submissions Submission[]
+  duplicateSubmissions Submission[] @relation("DuplicateInstitution")
 }
 
 model Authorship {
@@ -47,4 +49,50 @@ model Authorship {
   institution Institution @relation(fields: [institutionId], references: [id], onDelete: Cascade)
 
   @@unique([paperId, authorId, institutionId], map: "authorship_unique")
+}
+
+model Submission {
+  id                   String   @id @default(cuid())
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  contactName          String
+  contactEmail         String?
+  submitterType        String?  // future use: student, faculty, etc.
+  institutionName      String
+  institutionCountry   String?
+  institutionCountryName String?
+  institutionCity      String?
+  locationQuery        String?
+  institutionWebsite   String?
+  leadershipApproach   String
+  latitude             Float?
+  longitude            Float?
+  resolvedLatitude     Float?
+  resolvedLongitude    Float?
+  geocodeStatus        String   @default("pending")
+  geocodeResponse      Json?
+  approvedBy           String?
+  approvedAt           DateTime?
+  rejectedAt           DateTime?
+  rejectionReason      String?
+  reviewedAt           DateTime?
+  submissionIp         String?
+  status               String   @default("pending")
+
+  institutionId        String?
+  institution          Institution? @relation(fields: [institutionId], references: [id])
+  duplicateOfId        String?
+  duplicateOf          Institution? @relation("DuplicateInstitution", fields: [duplicateOfId], references: [id])
+
+  @@index([institutionId])
+}
+
+model SubmissionRequest {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  ip        String
+  userAgent String?
+  success   Boolean @default(false)
+  error     String?
+  type      String   @default("submission")
 }

@@ -8,9 +8,11 @@
  */
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import maplibregl, { Map, Popup } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
+import { countries as COUNTRY_LIST, findCountryByName } from "@/lib/countries";
 
 // Defines the shape of each institution record that comes from the JSON feed.
 // Optional properties (`country`, `top_authors`) are present for most entries but
@@ -25,6 +27,24 @@ type Marker = {
   top_authors?: string[];
 };
 
+type CommunityMarker = {
+  id: string;
+  name: string;
+  country?: string | null;
+  countryName?: string | null;
+  lat: number;
+  lng: number;
+  status: string;
+  geocodeStatus: string;
+  leaders: {
+    id: string;
+    name: string;
+    leadership: string;
+    website?: string | null;
+    submittedAt: string;
+  }[];
+};
+
 /**
  * Page renders an interactive MapLibre map of research institutions with convenient
  * filtering controls. All map instance setup and lifecycle management happens here.
@@ -36,6 +56,31 @@ export default function Page() {
   const mapRef = useRef<Map | null>(null);
   const [allMarkers, setAllMarkers] = useState<Marker[]>([]);
   const [loaded, setLoaded] = useState(false);
+  const [communityEnabled, setCommunityEnabled] = useState(false);
+  const [communityMarkers, setCommunityMarkers] = useState<CommunityMarker[]>([]);
+  const [communityFetched, setCommunityFetched] = useState(false);
+  const [communityLoading, setCommunityLoading] = useState(false);
+  const [communityError, setCommunityError] = useState<string | null>(null);
+
+  const normalizeWebsite = useCallback((url?: string | null) => {
+    if (!url) return null;
+    const trimmed = String(url).trim();
+    if (!trimmed) return null;
+    if (/^https?:\/\//i.test(trimmed)) return trimmed;
+    return `https://${trimmed.replace(/^https?:\/\//i, "")}`;
+  }, []);
+
+  const parseLeadership = useCallback((text?: string | null) => {
+    const trimmed = (text ?? "").trim();
+    if (!trimmed) {
+      return { role: "Leadership insight coming soon.", description: "" };
+    }
+    const paragraph = trimmed.split(/\n+/)[0] ?? trimmed;
+    const sentenceMatch = paragraph.match(/[^.!?]+[.!?]?/);
+    const role = (sentenceMatch ? sentenceMatch[0] : paragraph).trim();
+    const description = trimmed.slice(role.length).trim();
+    return { role, description };
+  }, []);
 
   // UI state: the free-text search, the country dropdown, the slider threshold,
   // and whether the filter sidebar is showing on small screens.
@@ -62,13 +107,43 @@ export default function Page() {
       .catch((e) => console.error("Failed to load markers:", e));
   }, []);
 
+  useEffect(() => {
+    if (!communityEnabled || communityFetched || communityLoading) return;
+    setCommunityLoading(true);
+    setCommunityError(null);
+    fetch("/api/community-markers", { cache: "no-store" })
+      .then((r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json();
+      })
+      .then((data: CommunityMarker[]) => {
+        setCommunityMarkers(data || []);
+        setCommunityFetched(true);
+      })
+      .catch((error) => {
+        console.error("Failed to load community markers:", error);
+        setCommunityError("Couldn’t load community submissions.");
+      })
+      .finally(() => setCommunityLoading(false));
+  }, [communityEnabled, communityFetched, communityLoading]);
+
 
   // Derive the country dropdown options directly from the loaded markers. This keeps the
   // UI consistent with the data and automatically includes new countries if the dataset grows.
   const countries = useMemo(() => {
     const s = new Set<string>();
     for (const m of allMarkers) if (m.country) s.add(m.country);
-    return ["ALL", ...Array.from(s).sort()];
+    const codes = Array.from(s);
+    const mapped = codes
+      .map((code) => {
+        const record = COUNTRY_LIST.find((c) => c.code === code) ?? findCountryByName(code);
+        return {
+          code,
+          name: record?.name ?? code,
+        };
+      })
+      .sort((a, b) => a.name.localeCompare(b.name));
+    return [{ code: "ALL", name: "All countries" }, ...mapped];
   }, [allMarkers]);
 
   // Recalculate slider bounds whenever the data changes so the control accurately reflects
@@ -114,6 +189,25 @@ export default function Page() {
     })),
   });
 
+  const communityToGeoJSON = (
+    items: CommunityMarker[],
+  ): GeoJSON.FeatureCollection => ({
+    type: "FeatureCollection",
+    features: items.map((m) => ({
+      type: "Feature",
+      properties: {
+        id: m.id,
+        name: m.name,
+        country: m.country || "",
+        country_name: m.countryName || "",
+        status: m.status,
+        geocode_status: m.geocodeStatus,
+        leaders: JSON.stringify(m.leaders ?? []),
+      },
+      geometry: { type: "Point", coordinates: [m.lng, m.lat] },
+    })),
+  });
+
   // Helper: zoom the visible map region so every marker is framed nicely. For a single
   // marker we jump straight to a reasonable zoom level; for multiple markers we expand
   // a bounding box that encompasses every point and hand that to MapLibre.
@@ -139,7 +233,18 @@ export default function Page() {
    *   4. Cleans up by removing the map on unmount or data change.
    */
   useEffect(() => {
-    if (!containerRef.current || mapRef.current || allMarkers.length === 0) return;
+    if (!containerRef.current || allMarkers.length === 0) return;
+
+    if (mapRef.current) {
+      try {
+        mapRef.current.remove();
+      } catch {
+        // ignore removal errors
+      }
+      mapRef.current = null;
+    }
+
+    setLoaded(false);
 
     const map = new maplibregl.Map({
       container: containerRef.current,
@@ -208,6 +313,31 @@ export default function Page() {
           "circle-radius": 6,
           "circle-stroke-width": 1,
           "circle-stroke-color": "#ffffff",
+        },
+      });
+
+      map.addSource("community", {
+        type: "geojson",
+        data: communityToGeoJSON(
+          communityEnabled ? communityMarkers : [],
+        ) as any,
+      });
+
+      map.addLayer({
+        id: "community-points",
+        type: "circle",
+        source: "community",
+        paint: {
+          "circle-color": "#7F56D9",
+          "circle-radius": 7,
+          "circle-stroke-width": 1.5,
+          "circle-stroke-color": "#ffffff",
+          "circle-opacity": [
+            "case",
+            ["boolean", ["feature-state", "hover"], false],
+            0.95,
+            0.75,
+          ],
         },
       });
 
@@ -290,12 +420,91 @@ export default function Page() {
       map.on("mouseleave", "clusters", () => (map.getCanvas().style.cursor = ""));
       map.on("mouseenter", "unclustered", () => (map.getCanvas().style.cursor = "pointer"));
       map.on("mouseleave", "unclustered", () => (map.getCanvas().style.cursor = ""));
+      map.on("mouseenter", "community-points", () => (map.getCanvas().style.cursor = "pointer"));
+      map.on("mouseleave", "community-points", () => (map.getCanvas().style.cursor = ""));
+
+      map.on("click", "community-points", (e) => {
+        const feature = e.features?.[0];
+        if (!feature) return;
+        const props: any = feature.properties || {};
+        let leaders: Array<{
+          id: string;
+          name: string;
+          leadership: string;
+          website?: string | null;
+          submittedAt?: string;
+        }> = [];
+        try {
+          if (typeof props.leaders === "string") {
+            leaders = JSON.parse(props.leaders);
+          } else if (Array.isArray(props.leaders)) {
+            leaders = props.leaders;
+          }
+        } catch {
+          leaders = [];
+        }
+
+        const sortedLeaders = [...leaders].sort((a, b) => {
+          const an = (a.name || "").toLowerCase();
+          const bn = (b.name || "").toLowerCase();
+          if (an && bn) return an.localeCompare(bn);
+          if (an) return -1;
+          if (bn) return 1;
+          return 0;
+        });
+
+        const cards = sortedLeaders
+          .map((leader) => {
+            const { role, description } = parseLeadership(leader.leadership);
+            const website = normalizeWebsite(leader.website ?? null);
+            const submitted = leader.submittedAt
+              ? new Date(leader.submittedAt).toLocaleDateString()
+              : "Recently";
+            return `
+              <div style="border:1px solid rgba(127,86,217,.25);border-radius:8px;padding:10px;margin-bottom:10px;background:rgba(127,86,217,.08);">
+                <div style="font-weight:600;color:#1b1464;font-size:14px;">${leader.name || "Community contributor"}</div>
+                <div style="font-size:12px;color:#6b5aa0;margin:4px 0;">Shared ${submitted}</div>
+                <div style="font-size:12px;color:#2f1e4f;font-weight:600;margin-bottom:4px;">${role}</div>
+                <div style="font-size:13px;color:#1f1f1f;line-height:1.4;white-space:pre-line;">
+                  ${description || ""}
+                </div>
+                ${
+                  website
+                    ? `<div style=\"margin-top:8px;\"><a style=\"font-size:12px;color:#4338ca;text-decoration:underline;\" href=\"${website}\" target=\"_blank\" rel=\"noopener noreferrer\">Visit website</a></div>`
+                    : ""
+                }
+              </div>`;
+          })
+          .join("");
+
+        const html = `
+          <div style="font-family:system-ui,sans-serif;font-size:14px;color:#1f1f1f;background:rgba(255,255,255,.98);border-radius:10px;padding:12px;box-shadow:0 2px 12px rgba(79,70,229,.25);max-width:320px;line-height:1.5;">
+            <div style="font-weight:700;font-size:16px;color:#1b1464;margin-bottom:4px;">${props.name || "Community submission"}</div>
+            <div style="font-size:12px;color:#514d6d;margin-bottom:8px;">
+              ${props.country_name || props.country || "Unknown location"}
+            </div>
+            <div style="font-size:12px;color:#7F56D9;margin-bottom:8px;">Community leadership insight</div>
+            ${
+              cards
+                ? `<div style="max-height:240px;overflow-y:auto;padding-right:4px;margin-right:-4px;">${cards}</div>`
+                : '<div style="font-size:12px;color:#6b7280;">No contributors yet.</div>'
+            }
+          </div>
+        `;
+        new Popup({ maxWidth: "340px" }).setLngLat(e.lngLat).setHTML(html).addTo(map);
+      });
 
       setLoaded(true);
     });
 
-    return () => map.remove();
-  }, [allMarkers]);
+    return () => {
+      try {
+        map.remove();
+      } finally {
+        mapRef.current = null;
+      }
+    };
+  }, [allMarkers, normalizeWebsite, parseLeadership]);
 
   // Whenever the filtered results change, update the GeoJSON source so the map immediately
   // reflects the new set of institutions.
@@ -306,6 +515,17 @@ export default function Page() {
     if (!src) return;
     src.setData(toGeoJSON(markers) as any);
   }, [markers, loaded]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !loaded) return;
+    const src: any = map.getSource("community");
+    if (!src) return;
+    const data = communityEnabled
+      ? communityToGeoJSON(communityMarkers)
+      : { type: "FeatureCollection", features: [] };
+    src.setData(data as any);
+  }, [communityMarkers, communityEnabled, loaded]);
 
   // Auto-zoom when country or minimum count changes to keep the map centered on relevant
   // markers. A small timeout prevents rapid consecutive updates from feeling jumpy.
@@ -403,7 +623,7 @@ export default function Page() {
           className="w-full mb-3 rounded border border-gray-300 px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 text-[#111] bg-white touch-manipulation"
         >
           {countries.map((c) => (
-            <option key={c} value={c}>{c}</option>
+            <option key={c.code} value={c.code}>{c.name}</option>
           ))}
         </select>
 
@@ -438,6 +658,54 @@ export default function Page() {
               Reset
             </button>
           </div>
+        </div>
+
+        <div className="mt-4 rounded-md border border-violet-200 bg-violet-50/90 p-3 text-xs text-[#433063]">
+          <label className="flex items-start gap-2 font-medium text-[#2f1e4f]">
+            <input
+              type="checkbox"
+              className="mt-1 h-4 w-4 accent-[#7F56D9]"
+              checked={communityEnabled}
+              onChange={(event) => setCommunityEnabled(event.target.checked)}
+            />
+            <span>
+              Show community-submitted leadership approaches
+              <span className="ml-2 rounded-full bg-[#7F56D9] px-2 py-0.5 text-[10px] font-semibold uppercase text-white">
+                Beta
+              </span>
+            </span>
+          </label>
+          <p className="mt-2 leading-relaxed">
+            Community stories appear as violet markers. Entries are reviewed
+            before publication, but may not be fully verified.
+          </p>
+        {communityEnabled && (
+          <div className="mt-2 text-[11px] font-medium">
+            {communityLoading && <span>Loading submissions…</span>}
+            {!communityLoading && communityMarkers.length > 0 && (
+              <span>{communityMarkers.length} submission{communityMarkers.length === 1 ? "" : "s"} currently visible.</span>
+            )}
+            {!communityLoading && communityMarkers.length === 0 && !communityError && (
+              <span>No approved submissions yet.</span>
+            )}
+            {communityError && (
+              <span className="text-red-500">{communityError}</span>
+            )}
+          </div>
+        )}
+      </div>
+
+        <div className="mt-4 rounded-md border border-gray-200 bg-white/90 p-3 text-xs leading-relaxed text-[#333]">
+          <div className="font-semibold text-[#000]">Share your leadership approach</div>
+          <p className="mt-1">
+            Spotlight how your team leads and mentors by submitting your methods for review.
+          </p>
+          <Link
+            href="/submit"
+            className="mt-2 inline-flex items-center text-sm font-semibold text-blue-600 hover:text-blue-800"
+          >
+            Tell us about your leadership →
+          </Link>
         </div>
       </div>
 
