@@ -75,6 +75,8 @@ npm install
 yarn install
 ```
 
+> If you plan to use the SQLite workflow locally, run `PRISMA_SCHEMA_PATH=prisma/schema.sqlite.prisma npm install` so Prisma generates the client against the SQLite schema.
+
 **Create a .env file (if it doesn’t exist) and set the database path:**
 ```bash
 
@@ -103,13 +105,14 @@ Open http://localhost:3000 in your browser.
 
 ### Environment targets
 
-- Local development uses SQLite by default (`prisma/schema.prisma`). No extra configuration is required—just keep `DATABASE_URL="file:./prisma/dev.db"` in `.env`.
-- To target Postgres (e.g., Neon in production), copy `prisma/schema.postgres.prisma` and set the environment variable `PRISMA_SCHEMA_PATH=prisma/schema.postgres.prisma` before running Prisma commands. Example:
+- Production (and the default Prisma client) now uses the Postgres schema at `prisma/schema.prisma`. Point `DATABASE_URL` at Neon (or any Postgres instance) and Prisma works out of the box.
+- For local development with SQLite, keep `DATABASE_URL="file:./prisma/dev.db"` in `.env` **and** export `PRISMA_SCHEMA_PATH=prisma/schema.sqlite.prisma` before running Prisma or Next commands. Example:
   ```bash
-  PRISMA_SCHEMA_PATH=prisma/schema.postgres.prisma npx prisma migrate deploy
-  PRISMA_SCHEMA_PATH=prisma/schema.postgres.prisma npx prisma generate
+  export PRISMA_SCHEMA_PATH=prisma/schema.sqlite.prisma
+  npx prisma migrate deploy
+  npm run dev
   ```
-- On deployment platforms such as Vercel, set both `DATABASE_URL` (to your Neon connection string) and `PRISMA_SCHEMA_PATH` as project environment variables so the build and runtime use the Postgres schema.
+- On deployment platforms such as Vercel, set `DATABASE_URL` to the Neon pooler connection string and keep `PRISMA_SCHEMA_PATH=prisma/schema.prisma` (optional now, but safe to be explicit).
 - Use `.env.production.example` as a template for production secrets when configuring remote environments.
 
 ## 🛠️ Technology Stack

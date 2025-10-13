@@ -79,21 +79,16 @@ function resolveCodes(): CountryRecord[] {
 
   if (typeof intlWithOptionalSupportedValues.supportedValuesOf === "function") {
     try {
-      const supported =
-        intlWithOptionalSupportedValues.supportedValuesOf?.("region") ?? [];
+      const supported = intlWithOptionalSupportedValues.supportedValuesOf("region") ?? [];
       const valid = supported.filter((code) => /^[A-Z]{2}$/.test(code));
       const names = new Intl.DisplayNames(["en"], { type: "region" });
       return valid
-        .map((code) => ({
-          code,
-          name: names.of(code) ?? code,
-        }))
+        .map((code) => ({ code, name: names.of(code) ?? code }))
         .sort((a, b) => a.name.localeCompare(b.name));
-    } catch (error) {
-      console.warn(
-        "Intl.supportedValuesOf('region') not available; falling back to static country list.",
-        error,
-      );
+    } catch {
+      // Silently fall back to the static list if this environment doesn't
+      // support Intl.supportedValuesOf("region"). This avoids noisy logs
+      // during dev or certain server runtimes.
       return fallbackCountryList;
     }
   }

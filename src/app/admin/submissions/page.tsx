@@ -4,6 +4,10 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { DeleteSubmissionButton } from "./DeleteSubmissionButton";
 
+// Force this route to be dynamic so it doesn't try to prerender during build,
+// which would require a live database connection in the build environment.
+export const dynamic = "force-dynamic";
+
 const formatter = new Intl.DateTimeFormat("en", {
   year: "numeric",
   month: "short",

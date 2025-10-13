@@ -8,7 +8,8 @@
     "start": "next start",
     "refresh": "bash scripts/refresh_data.sh",
     "db:seed": "node prisma/seed.js",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "postinstall": "PRISMA_SCHEMA_PATH=${PRISMA_SCHEMA_PATH:-prisma/schema.prisma} npx prisma generate"
   },
   "dependencies": {
     "@prisma/client": "^6.17.1",
