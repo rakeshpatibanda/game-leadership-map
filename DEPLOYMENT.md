@@ -13,18 +13,11 @@ This project currently targets a local SQLite file for development. Hosting the 
 
 ## 2. Point Prisma to Postgres
 
-1. Open `prisma/schema.prisma` and change the datasource provider:
+1. This repo ships with two schema files:
+   - `prisma/schema.prisma` → SQLite (local default)
+   - `prisma/schema.postgres.prisma` → Postgres/Neon (deployment)
 
-   ```diff
-   datasource db {
--  provider = "sqlite"
--  url      = env("DATABASE_URL")
-+  provider = "postgresql"
-+  url      = env("DATABASE_URL")
-   }
-   ```
-
-   > SQLite-specific types (e.g. `Json` columns using `JSONB`) already line up with Postgres, so no further schema edits are required.
+   For Postgres commands, set the `PRISMA_SCHEMA_PATH` environment variable so Prisma picks the right file.
 
 2. In your local `.env`, replace or add the Neon connection string:
 
@@ -47,13 +40,13 @@ npm install
 Push the existing migrations into the remote Postgres database:
 
 ```bash
-npx prisma migrate deploy
+PRISMA_SCHEMA_PATH=prisma/schema.postgres.prisma npx prisma migrate deploy
 ```
 
 Seed the database so the map has data:
 
 ```bash
-npm run db:seed
+PRISMA_SCHEMA_PATH=prisma/schema.postgres.prisma npm run db:seed
 ```
 
 > You can verify the data with `npx prisma studio` – it will connect to Neon because `DATABASE_URL` now points there.
@@ -63,11 +56,11 @@ npm run db:seed
 ## 4. Commit the Changes
 
 1. Make sure `prisma/dev.db` and other SQLite artefacts are removed (or `.gitignored`).
-2. Commit the schema change and any updated docs:
+2. Commit the environment example and docs you touched:
 
    ```bash
-   git add prisma/schema.prisma DEPLOYMENT.md README.md
-   git commit -m "Point Prisma to Postgres and add deployment guide"
+   git add DEPLOYMENT.md README.md .env.production.example
+   git commit -m "Document Postgres deployment configuration"
    git push
    ```
 
@@ -81,6 +74,7 @@ npm run db:seed
    - Output dir: `.next`
 3. In **Project → Settings → Environment Variables**, add:
    - `DATABASE_URL` (Neon connection string)
+   - `PRISMA_SCHEMA_PATH=prisma/schema.postgres.prisma`
    - Existing variables (`USER_AGENT`, `NOMINATIM_URL`, `SUBMISSION_RATE_LIMIT_*`, `ADMIN_USER`, `ADMIN_PASS`, etc.)
 4. Trigger the first deploy (Vercel does this automatically after import).
 
@@ -102,10 +96,8 @@ Once the deploy finishes:
 
 If you want separate dev/prod databases:
 
-1. Keep the Neon URL in `.env.production`.
-2. Maintain a local SQLite `.env.development` and run Prisma with a different schema file (e.g. `prisma/schema.sqlite.prisma`) or switch the `DATABASE_URL` before running `npm run dev`.
-
-For simplicity, this guide standardises on Neon for all environments so the schema and migrations remain consistent.
+1. Keep the Neon URL in `.env.production` alongside `PRISMA_SCHEMA_PATH=prisma/schema.postgres.prisma`.
+2. Use `.env` (or `.env.development`) with `DATABASE_URL="file:./prisma/dev.db"` and omit `PRISMA_SCHEMA_PATH` so Prisma defaults to SQLite locally.
 
 ---
 

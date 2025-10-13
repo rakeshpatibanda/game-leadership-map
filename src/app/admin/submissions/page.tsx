@@ -12,8 +12,9 @@ const formatter = new Intl.DateTimeFormat("en", {
   minute: "2-digit",
 });
 
-function getAdminIdentity() {
-  const auth = headers().get("authorization");
+async function getAdminIdentity() {
+  const headerList = await headers();
+  const auth = headerList.get("authorization");
   if (auth?.startsWith("Basic ")) {
     const decoded = Buffer.from(auth.slice(6), "base64").toString("utf-8");
     const [user] = decoded.split(":");
@@ -33,7 +34,7 @@ async function updateSubmissionStatus(formData: FormData) {
     throw new Error("Missing submission ID or action type");
   }
 
-  const reviewer = getAdminIdentity();
+  const reviewer = await getAdminIdentity();
   const now = new Date();
 
   if (action === "approve") {
@@ -192,7 +193,7 @@ export default async function AdminSubmissionsPage() {
     }),
   ]);
 
-  const reviewer = getAdminIdentity();
+  const reviewer = await getAdminIdentity();
 
   return (
     <main className="min-h-screen bg-slate-100 py-10 text-slate-900">

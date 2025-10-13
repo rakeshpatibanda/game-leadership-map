@@ -73,10 +73,14 @@ function resolveCodes(): CountryRecord[] {
     return fallbackCountryList;
   }
 
-  if (typeof Intl.supportedValuesOf === "function") {
+  const intlWithOptionalSupportedValues = Intl as typeof Intl & {
+    supportedValuesOf?: (key: string) => string[];
+  };
+
+  if (typeof intlWithOptionalSupportedValues.supportedValuesOf === "function") {
     try {
-      // Some runtimes throw when "region" isn't supported; guard with try/catch.
-      const supported = Intl.supportedValuesOf("region") as string[];
+      const supported =
+        intlWithOptionalSupportedValues.supportedValuesOf?.("region") ?? [];
       const valid = supported.filter((code) => /^[A-Z]{2}$/.test(code));
       const names = new Intl.DisplayNames(["en"], { type: "region" });
       return valid

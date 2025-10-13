@@ -101,6 +101,17 @@ npm run dev
 
 Open http://localhost:3000 in your browser.
 
+### Environment targets
+
+- Local development uses SQLite by default (`prisma/schema.prisma`). No extra configuration is required—just keep `DATABASE_URL="file:./prisma/dev.db"` in `.env`.
+- To target Postgres (e.g., Neon in production), copy `prisma/schema.postgres.prisma` and set the environment variable `PRISMA_SCHEMA_PATH=prisma/schema.postgres.prisma` before running Prisma commands. Example:
+  ```bash
+  PRISMA_SCHEMA_PATH=prisma/schema.postgres.prisma npx prisma migrate deploy
+  PRISMA_SCHEMA_PATH=prisma/schema.postgres.prisma npx prisma generate
+  ```
+- On deployment platforms such as Vercel, set both `DATABASE_URL` (to your Neon connection string) and `PRISMA_SCHEMA_PATH` as project environment variables so the build and runtime use the Postgres schema.
+- Use `.env.production.example` as a template for production secrets when configuring remote environments.
+
 ## 🛠️ Technology Stack
 
 - Framework: Next.js 15.5.4 (App Router)

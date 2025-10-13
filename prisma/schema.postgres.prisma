@@ -1,0 +1,98 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Paper {
+  id          String       @id @default(cuid())
+  dblpKey     String       @unique
+  title       String
+  year        Int?
+  venue       String?
+  doi         String?      @unique
+  openalexId  String?      @unique
+  authorships Authorship[]
+}
+
+model Author {
+  id          String       @id @default(cuid())
+  name        String
+  openalexId  String?      @unique
+  authorships Authorship[]
+}
+
+model Institution {
+  id                   String       @id
+  name                 String?
+  country              String?
+  lat                  Float?
+  lng                  Float?
+  type                 String?
+  authorships          Authorship[]
+  submissions          Submission[]
+  duplicateSubmissions Submission[] @relation("DuplicateInstitution")
+}
+
+model Authorship {
+  id            String @id @default(cuid())
+  order         Int?
+  paperId       String
+  authorId      String
+  institutionId String
+
+  paper       Paper       @relation(fields: [paperId], references: [id], onDelete: Cascade)
+  author      Author      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  institution Institution @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+
+  @@unique([paperId, authorId, institutionId], map: "authorship_unique")
+}
+
+model Submission {
+  id                     String    @id @default(cuid())
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+  contactName            String
+  contactEmail           String?
+  submitterType          String?
+  institutionName        String
+  institutionCountry     String?
+  institutionCountryName String?
+  institutionCity        String?
+  locationQuery          String?
+  institutionWebsite     String?
+  leadershipApproach     String
+  latitude               Float?
+  longitude              Float?
+  resolvedLatitude       Float?
+  resolvedLongitude      Float?
+  geocodeStatus          String    @default("pending")
+  geocodeResponse        Json?
+  approvedBy             String?
+  approvedAt             DateTime?
+  rejectedAt             DateTime?
+  rejectionReason        String?
+  reviewedAt             DateTime?
+  submissionIp           String?
+  status                 String    @default("pending")
+
+  institutionId String?
+  institution   Institution? @relation(fields: [institutionId], references: [id])
+  duplicateOfId String?
+  duplicateOf   Institution? @relation("DuplicateInstitution", fields: [duplicateOfId], references: [id])
+
+  @@index([institutionId])
+}
+
+model SubmissionRequest {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  ip        String
+  userAgent String?
+  success   Boolean  @default(false)
+  error     String?
+  type      String   @default("submission")
+}

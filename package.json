@@ -7,7 +7,8 @@
     "build": "next build --turbopack",
     "start": "next start",
     "refresh": "bash scripts/refresh_data.sh",
-    "db:seed": "node prisma/seed.js"
+    "db:seed": "node prisma/seed.js",
+    "lint": "eslint ."
   },
   "dependencies": {
     "@prisma/client": "^6.17.1",
@@ -17,13 +18,18 @@
     "react-dom": "19.1.0"
   },
   "devDependencies": {
+    "@eslint/js": "^9.37.0",
+    "@next/eslint-plugin-next": "^15.5.4",
     "@tailwindcss/postcss": "^4",
     "@types/geojson": "^7946.0.16",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "eslint": "^9.37.0",
+    "globals": "^16.4.0",
     "prisma": "^6.17.1",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "typescript-eslint": "^8.46.0"
   }
 }

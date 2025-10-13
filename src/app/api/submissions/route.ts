@@ -99,7 +99,8 @@ export async function POST(req: Request) {
 
   const institutionCountryName = (body.institutionCountryName ?? "").trim();
 
-  let institutionCountry = (body.institutionCountry ?? "").trim();
+  let institutionCountry: string | null = (body.institutionCountry ?? "")
+    .trim();
   if (institutionCountry) {
     if (institutionCountry.length !== 2) {
       errors.push("institutionCountry must be a two-letter country code.");
@@ -107,7 +108,7 @@ export async function POST(req: Request) {
       institutionCountry = institutionCountry.toUpperCase();
     }
   } else {
-    institutionCountry = undefined;
+    institutionCountry = null;
   }
 
   const institutionCity = (body.institutionCity ?? "").trim();
@@ -144,7 +145,7 @@ export async function POST(req: Request) {
       errors.push("institutionId does not match an existing institution.");
     }
     if (!institutionCountry && linkedInstitution?.country) {
-      institutionCountry = linkedInstitution.country ?? undefined;
+      institutionCountry = linkedInstitution.country ?? null;
     }
   }
 
@@ -199,7 +200,7 @@ export async function POST(req: Request) {
       institutionName,
       institutionCity,
       countryName: institutionCountryName,
-      countryCode: institutionCountry,
+      countryCode: institutionCountry ?? undefined,
     });
     geocodeStatus = geocode.status;
     geocodeResponse = geocode.raw ?? null;
